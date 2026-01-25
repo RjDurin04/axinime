@@ -21,7 +21,7 @@ const Index = () => {
     <DashboardLayout sfwMode={sfwMode} onSfwChange={setSfwMode}>
       {/* Hero */}
       {topAiring.isLoading ? (
-        <div className="h-[280px] md:h-[320px] bg-card animate-pulse relative">
+        <div className="h-[40vh] min-h-[300px] md:h-[50vh] bg-card animate-pulse relative rounded-xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
           <div className="absolute bottom-8 left-6 space-y-3 max-w-md">
             <Skeleton className="h-5 w-20" />
@@ -34,7 +34,7 @@ const Index = () => {
           </div>
         </div>
       ) : topAiring.error ? (
-        <div className="h-[200px] flex items-center justify-center">
+        <div className="h-[300px] flex items-center justify-center">
           <ErrorState message="Failed to load featured anime" onRetry={() => topAiring.refetch()} />
         </div>
       ) : topAiring.data?.data ? (
@@ -47,9 +47,9 @@ const Index = () => {
       )}
 
       {/* Main Grid Layout */}
-      <div className="flex flex-col lg:flex-row gap-6 p-4 md:p-6">
+      <div className="flex flex-col lg:flex-row gap-8 py-6">
         {/* Left Side: Main Content */}
-        <div className="flex-1 space-y-8 min-w-0">
+        <div className="flex-1 space-y-12 min-w-0">
           {/* Current Season Grid */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -57,13 +57,13 @@ const Index = () => {
             transition={{ delay: 0.1 }}
           >
             {seasonNow.isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-7 w-48" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                  {[...Array(6)].map((_, i) => (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-48" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {[...Array(10)].map((_, i) => (
                     <div key={i} className="space-y-2">
-                      <Skeleton className="aspect-[3/4] w-full rounded-lg" />
-                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="aspect-[2/3] w-full rounded-xl" />
+                      <Skeleton className="h-4 w-full" />
                     </div>
                   ))}
                 </div>
@@ -82,13 +82,13 @@ const Index = () => {
             transition={{ delay: 0.2 }}
           >
             {seasonUpcoming.isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-7 w-48" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                  {[...Array(6)].map((_, i) => (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-48" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {[...Array(5)].map((_, i) => (
                     <div key={i} className="space-y-2">
-                      <Skeleton className="aspect-[3/4] w-full rounded-lg" />
-                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="aspect-[2/3] w-full rounded-xl" />
+                      <Skeleton className="h-4 w-full" />
                     </div>
                   ))}
                 </div>
@@ -107,13 +107,13 @@ const Index = () => {
             transition={{ delay: 0.3 }}
           >
             {topAnime.isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-7 w-48" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                  {[...Array(6)].map((_, i) => (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-48" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {[...Array(5)].map((_, i) => (
                     <div key={i} className="space-y-2">
-                      <Skeleton className="aspect-[3/4] w-full rounded-lg" />
-                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="aspect-[2/3] w-full rounded-xl" />
+                      <Skeleton className="h-4 w-full" />
                     </div>
                   ))}
                 </div>
@@ -127,11 +127,13 @@ const Index = () => {
         </div>
 
         {/* Right Side: Aside Section */}
-        <div className="lg:sticky lg:top-20 h-fit">
-          <TopAiringSidebar
-            animes={topAiring.data?.data?.slice(0, 8)}
-            isLoading={topAiring.isLoading}
-          />
+        <div className="lg:w-[320px] shrink-0">
+          <div className="lg:sticky lg:top-24 space-y-6">
+            <TopAiringSidebar
+              animes={topAiring.data?.data?.slice(0, 8)}
+              isLoading={topAiring.isLoading}
+            />
+          </div>
         </div>
       </div>
     </DashboardLayout>

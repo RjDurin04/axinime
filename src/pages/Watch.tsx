@@ -29,9 +29,16 @@ const WatchPage = () => {
     return (
         <DashboardLayout sfwMode={sfwMode} onSfwChange={setSfwMode}>
             <div className="p-4 md:p-8 space-y-8">
-                <header className="space-y-2">
-                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Watch Episodes</h1>
-                    <p className="text-muted-foreground">Keep up with the latest and most popular anime episodes.</p>
+                <header className="space-y-3">
+                    <h1 className="text-3xl md:text-5xl font-black tracking-tighter">Watch Episodes</h1>
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                        <p className="text-muted-foreground font-medium text-lg">Keep up with the latest and most popular anime episodes.</p>
+                        <div className="hidden md:block h-4 w-[1px] bg-white/10" />
+                        <p className="text-primary/70 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                            <ExternalLink className="h-3 w-3" />
+                            Videos provided by external official platforms
+                        </p>
+                    </div>
                 </header>
 
                 <Tabs defaultValue="recent" className="space-y-6">
@@ -69,41 +76,40 @@ const WatchPage = () => {
 
                                             <Link
                                                 to={`/anime/${item.entry.mal_id}`}
-                                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/40 backdrop-blur-[2px]"
                                             >
-                                                <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                                                    <Play className="h-6 w-6 fill-current" />
+                                                <div className="px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+                                                    View Details
                                                 </div>
                                             </Link>
 
                                             <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
                                                 {item.region_locked && (
-                                                    <Badge variant="destructive" className="text-[10px] uppercase">Region Locked</Badge>
+                                                    <Badge variant="destructive" className="text-[9px] font-black uppercase tracking-tighter shadow-lg">Region Locked</Badge>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="p-4 flex-1 flex flex-col">
+                                        <div className="p-4 flex-1 flex flex-col bg-card/40 border-t border-white/5">
                                             <Link to={`/anime/${item.entry.mal_id}`} className="hover:text-primary transition-colors">
-                                                <h3 className="font-semibold text-sm line-clamp-1 mb-2">
+                                                <h3 className="font-black text-sm line-clamp-1 mb-3">
                                                     {item.entry.title}
                                                 </h3>
                                             </Link>
 
                                             <div className="mt-auto space-y-2">
-                                                {item.episodes.slice(0, 2).map((ep) => (
-                                                    <div key={ep.mal_id} className="flex items-center justify-between gap-2">
-                                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                                            {ep.title}
-                                                        </span>
-                                                        {ep.url && (
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" asChild>
-                                                                <a href={ep.url} target="_blank" rel="noopener noreferrer">
-                                                                    <ExternalLink className="h-3 w-3" />
-                                                                </a>
-                                                            </Button>
-                                                        )}
-                                                    </div>
+                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">Latest Episodes</p>
+                                                {item.episodes.slice(0, 3).map((ep) => (
+                                                    <a
+                                                        key={`${ep.mal_id}-${ep.title}`}
+                                                        href={ep.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-between gap-3 p-2 rounded-lg bg-white/5 hover:bg-primary/20 hover:text-primary border border-white/5 transition-all text-xs group/link"
+                                                    >
+                                                        <span className="font-bold truncate">{ep.title}</span>
+                                                        <ExternalLink className="h-3 w-3 shrink-0 opacity-50 group-hover/link:opacity-100" />
+                                                    </a>
                                                 ))}
                                             </div>
                                         </div>
@@ -129,23 +135,32 @@ const WatchPage = () => {
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="group bg-card/40 rounded-xl overflow-hidden border border-border/50 hover:border-primary/50 transition-all"
+                                        className="group bg-card/40 rounded-xl overflow-hidden border border-white/5 hover:border-primary/50 transition-all hover:shadow-2xl shadow-sm"
                                     >
                                         <div className="relative aspect-video overflow-hidden">
                                             <img
                                                 src={item.entry.images?.webp?.image_url || item.entry.images?.jpg?.image_url || ""}
                                                 alt={item.entry.title}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
 
-                                            <div className="absolute bottom-2 left-2 right-2">
+                                            <div className="absolute bottom-3 left-3 right-3">
                                                 <Link to={`/anime/${item.entry.mal_id}`}>
-                                                    <h3 className="text-white text-sm font-bold truncate group-hover:text-primary transition-colors">
+                                                    <h3 className="text-white text-sm font-black truncate group-hover:text-primary transition-colors tracking-tight">
                                                         {item.entry.title}
                                                     </h3>
                                                 </Link>
                                             </div>
+
+                                            <Link
+                                                to={`/anime/${item.entry.mal_id}`}
+                                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/40 backdrop-blur-[2px]"
+                                            >
+                                                <div className="px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+                                                    View Details
+                                                </div>
+                                            </Link>
                                         </div>
 
                                         <div className="p-4 space-y-3">

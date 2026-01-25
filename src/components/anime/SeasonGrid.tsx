@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, Play } from "lucide-react";
+import { Star, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { type Anime, getImageUrl, formatScore } from "@/lib/schemas";
@@ -53,63 +53,66 @@ function SeasonCard({ anime, index }: { anime: Anime; index: number }) {
   const displayTitle = anime.title_english || anime.title;
 
   return (
-    <Link to={`/anime/${anime.mal_id}`} className="block h-full">
+    <Link to={`/anime/${anime.mal_id}`} className="block h-full group">
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4, delay: index * 0.04 }}
-        className="group relative h-full flex flex-col bg-card/40 rounded-xl border border-border/10 hover:border-primary/40 hover:bg-card/60 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl group"
+        className="relative h-full flex flex-col bg-card/40 rounded-2xl border border-white/5 hover:border-primary/40 hover:bg-card/60 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
       >
         {/* Poster Container */}
         <div className="relative aspect-[3/4] overflow-hidden">
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={displayTitle}
+              alt={displayTitle || "Anime Poster"}
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               loading="lazy"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-muted">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">No Poster</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">No Poster</span>
             </div>
           )}
 
+          {/* Overlays for depth */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-60" />
+
           {/* Glassmorphism Hover Info Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/80 to-background/20 opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-[2px] p-3 flex flex-col justify-end">
-            <div className="space-y-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-              <div className="flex flex-wrap gap-1">
+          <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/80 to-background/20 opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-[4px] p-4 flex flex-col justify-end">
+            <div className="space-y-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+              <div className="flex flex-wrap gap-1.5">
                 {anime.genres?.slice(0, 2).map((genre) => (
-                  <span key={genre.mal_id} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/20">
+                  <span key={genre.mal_id} className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-primary/20 text-primary border border-primary/20 uppercase tracking-wider">
                     {genre.name}
                   </span>
                 ))}
               </div>
               {anime.synopsis && (
-                <p className="text-[9px] line-clamp-3 text-muted-foreground leading-relaxed italic">
+                <p className="text-[10px] line-clamp-3 text-muted-foreground leading-relaxed font-medium italic">
                   {anime.synopsis}
                 </p>
               )}
-              <div className="flex items-center gap-2 pt-1">
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-500 delay-100">
-                  <Play className="h-4 w-4 text-primary-foreground fill-current ml-0.5" />
+              <div className="flex items-center gap-2 pt-2">
+                <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-500 delay-100">
+                  <Info className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-[10px] font-bold text-primary">View Details</span>
+                <span className="text-xs font-black text-primary uppercase tracking-widest">Details</span>
               </div>
             </div>
           </div>
 
           {/* Floating Metadata (Always Visible) */}
-          <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 items-start">
+          <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-2 items-start scale-90 origin-top-left">
             {anime.score && (
-              <div className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 backdrop-blur-md border border-white/10 shadow-lg">
-                <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500" />
-                <span className="font-bold text-[10px] text-white">{formatScore(anime.score)}</span>
+              <div className="flex items-center gap-1.5 rounded-xl bg-black/60 px-2.5 py-1 backdrop-blur-md border border-white/10 shadow-xl">
+                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                <span className="font-black text-xs text-white">{formatScore(anime.score)}</span>
               </div>
             )}
             {anime.type && (
-              <div className="bg-primary/90 text-primary-foreground text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter backdrop-blur-md shadow-lg border border-primary/20">
+              <div className="bg-primary/95 text-primary-foreground text-[9px] font-black px-2.5 py-1 rounded-xl uppercase tracking-widest backdrop-blur-md shadow-xl border border-primary/20">
                 {anime.type}
               </div>
             )}
@@ -117,21 +120,21 @@ function SeasonCard({ anime, index }: { anime: Anime; index: number }) {
         </div>
 
         {/* Info Area */}
-        <div className="p-3 flex-1 flex flex-col justify-between gap-2">
-          <div className="space-y-1">
-            <h3 className="text-xs font-bold line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300">
+        <div className="p-3.5 flex-1 flex flex-col justify-between gap-2.5">
+          <div className="space-y-1.5">
+            <h3 className="text-sm font-black line-clamp-2 leading-tight group-hover:text-primary transition-colors duration-300">
               {displayTitle}
             </h3>
           </div>
 
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
+          <div className="flex items-center justify-between border-t border-white/5 pt-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                 {anime.status === "Currently Airing" ? "Airing" : anime.season || "Release"}
               </span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-              <span className="text-[10px] text-muted-foreground">
-                {anime.episodes ? `${anime.episodes} eps` : "Ongoing"}
+              <span className="h-1 w-1 rounded-full bg-primary/30" />
+              <span className="text-[10px] font-bold text-muted-foreground/80 uppercase">
+                {anime.episodes ? `${anime.episodes} EPS` : "Ongoing"}
               </span>
             </div>
           </div>

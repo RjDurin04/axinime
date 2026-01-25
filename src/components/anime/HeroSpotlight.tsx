@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,22 +45,22 @@ export function HeroSpotlight({ animes }: HeroSpotlightProps) {
   if (!currentAnime) return null;
 
   return (
-    <section className="relative h-[280px] md:h-[320px] w-full overflow-hidden">
+    <section className="relative h-[320px] md:h-[400px] lg:h-[450px] w-full overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl">
       {/* Background Image */}
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, scale: 1.1 }}
+          initial={{ opacity: 0, scale: 1.15 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="absolute inset-0"
         >
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={displayTitle}
-              className="h-full w-full object-cover object-top blur-[2px]"
+              alt={displayTitle || "Hero Background"}
+              className="h-full w-full object-cover object-center blur-[1px]"
             />
           ) : (
             <div className="h-full w-full bg-muted" />
@@ -68,35 +69,36 @@ export function HeroSpotlight({ animes }: HeroSpotlightProps) {
       </AnimatePresence>
 
       {/* Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-background/20" />
 
       {/* Content */}
       <div className="absolute inset-0 flex items-center">
-        <div className="container px-4 md:px-6 flex gap-6 items-center">
+        <div className="container px-4 md:px-8 lg:px-12 flex gap-4 md:gap-8 items-center">
           {/* Left: Poster */}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.8, rotate: 5 }}
+              transition={{ duration: 0.4 }}
               className="hidden sm:block shrink-0"
             >
-              <div className="relative w-32 md:w-40 aspect-[3/4] rounded-lg overflow-hidden shadow-2xl ring-1 ring-border/50">
+              <div className="relative w-32 md:w-48 aspect-[3/4] rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/20">
                 {imageUrl ? (
                   <img
                     src={imageUrl}
-                    alt={displayTitle}
+                    alt={displayTitle || "Hero Poster"}
                     className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="h-full w-full bg-muted" />
                 )}
                 {currentAnime.score && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 backdrop-blur-sm">
-                    <Star className="h-3 w-3 fill-primary text-primary" />
-                    <span className="font-mono text-xs font-bold">{formatScore(currentAnime.score)}</span>
+                  <div className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-black/70 px-2 py-1 backdrop-blur-md border border-white/10">
+                    <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                    <span className="font-bold text-xs text-white">{formatScore(currentAnime.score)}</span>
                   </div>
                 )}
               </div>
@@ -107,53 +109,56 @@ export function HeroSpotlight({ animes }: HeroSpotlightProps) {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.4 }}
-              className="flex-1 min-w-0 space-y-2 md:space-y-3"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="flex-1 min-w-0 space-y-3 md:space-y-5"
             >
               <div className="flex items-center gap-2 flex-wrap">
                 {currentAnime.rank && (
-                  <Badge className="gradient-primary border-0 text-xs">
+                  <Badge className="bg-primary hover:bg-primary text-primary-foreground border-0 text-[10px] md:text-xs font-black uppercase tracking-widest px-2.5 py-1">
                     #{currentAnime.rank} Trending
                   </Badge>
                 )}
                 {currentAnime.type && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px] md:text-xs font-bold uppercase tracking-wider bg-white/5 border-white/10 px-2.5 py-1">
                     {currentAnime.type}
                   </Badge>
                 )}
               </div>
 
-              <h1 className="text-xl md:text-3xl lg:text-4xl font-bold leading-tight tracking-tight line-clamp-2">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight line-clamp-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/70">
                 {displayTitle}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 text-xs md:text-base font-medium text-foreground/80">
                 {currentAnime.genres?.slice(0, 3).map((genre) => (
-                  <span key={genre.mal_id} className="after:content-['•'] after:ml-2 last:after:content-none">
+                  <span key={genre.mal_id} className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-primary" />
                     {genre.name}
                   </span>
                 ))}
                 {currentAnime.episodes && (
-                  <span>{currentAnime.episodes} eps</span>
+                  <span className="flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-primary" />
+                    {currentAnime.episodes} Episodes
+                  </span>
                 )}
               </div>
 
               {currentAnime.synopsis && (
-                <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 max-w-xl">
+                <p className="text-sm md:text-lg text-muted-foreground/90 line-clamp-2 md:line-clamp-3 max-w-2xl leading-relaxed font-medium">
                   {currentAnime.synopsis}
                 </p>
               )}
 
-              <div className="flex items-center gap-2 pt-1">
-                <Button size="sm" className="gap-1.5 h-8">
-                  <Play className="h-3.5 w-3.5" />
-                  Watch
-                </Button>
-                <Button size="sm" variant="outline" className="h-8 bg-background/50 backdrop-blur-sm">
-                  Details
+              <div className="flex items-center gap-3 pt-2 md:pt-4">
+                <Button size="lg" className="h-11 md:h-14 px-8 md:px-12 rounded-xl md:rounded-2xl gap-2 text-sm md:text-lg font-black shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all outline-none" asChild>
+                  <Link to={`/anime/${currentAnime.mal_id}`}>
+                    <Play className="h-4 w-4 md:h-5 md:w-5 fill-current" />
+                    View Details
+                  </Link>
                 </Button>
               </div>
             </motion.div>

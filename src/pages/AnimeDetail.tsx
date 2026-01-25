@@ -439,9 +439,9 @@ const AnimeDetail = () => {
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="hidden md:block"
+                                    className="mx-auto md:mx-0"
                                 >
-                                    <div className="w-[180px] aspect-[2/3] rounded-xl overflow-hidden border border-white/10 shadow-2xl group">
+                                    <div className="w-[140px] md:w-[180px] aspect-[2/3] rounded-xl overflow-hidden border border-white/10 shadow-2xl group relative z-20">
                                         <img src={bannerImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={anime.title} />
                                     </div>
                                 </motion.div>
@@ -450,47 +450,47 @@ const AnimeDetail = () => {
                                 <motion.div
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="space-y-4"
+                                    className="space-y-6 text-center md:text-left"
                                 >
                                     {/* Title */}
                                     <div>
-                                        <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">
+                                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
                                             {anime.title}
                                         </h1>
                                         {anime.title_english && anime.title_english !== anime.title && (
-                                            <p className="text-base text-foreground/70 font-semibold mt-0.5">{anime.title_english}</p>
+                                            <p className="text-lg text-foreground/80 font-semibold mt-1">{anime.title_english}</p>
                                         )}
                                         {anime.title_japanese && (
-                                            <p className="text-sm text-muted-foreground/50 font-semibold mt-0.5">{anime.title_japanese}</p>
+                                            <p className="text-sm text-muted-foreground/60 font-medium mt-1">{anime.title_japanese}</p>
                                         )}
                                     </div>
 
                                     {/* Genres, Explicit Genres, Demographics */}
-                                    <div className="flex flex-wrap gap-1.5">
+                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                                         {anime.genres?.map(g => (
-                                            <Badge key={g.mal_id} className="bg-white/5 hover:bg-white/10 text-foreground/70 border-white/5 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                                            <Badge key={g.mal_id} className="bg-white/5 hover:bg-white/10 text-foreground/80 border-white/5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors">
                                                 {g.name}
                                             </Badge>
                                         ))}
                                         {anime.explicit_genres?.map(g => (
-                                            <Badge key={g.mal_id} variant="destructive" className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                                            <Badge key={g.mal_id} variant="destructive" className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
                                                 {g.name}
                                             </Badge>
                                         ))}
                                         {anime.demographics?.map(d => (
-                                            <Badge key={d.mal_id} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                                            <Badge key={d.mal_id} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
                                                 {d.name}
                                             </Badge>
                                         ))}
                                         {anime.themes?.map(t => (
-                                            <Badge key={t.mal_id} variant="outline" className="text-[8px] h-5 px-2 border-blue-500/30 text-blue-400 rounded-full font-bold uppercase tracking-wider">
+                                            <Badge key={t.mal_id} variant="outline" className="text-[9px] h-6 px-2.5 border-blue-500/30 text-blue-400 rounded-full font-bold uppercase tracking-wider">
                                                 {t.name}
                                             </Badge>
                                         ))}
                                     </div>
 
                                     {/* Metadata Grid */}
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap justify-center md:justify-start gap-3">
                                         <InfoChip icon={Tv} label="Type" value={anime.type} />
                                         <InfoChip icon={Play} label="Eps" value={anime.episodes} />
                                         <InfoChip icon={Clock} label="Duration" value={anime.duration?.replace(" per ep", "")} />
@@ -537,7 +537,7 @@ const AnimeDetail = () => {
                                 <motion.div
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="grid grid-cols-2 gap-2"
+                                    className="grid grid-cols-2 lg:grid-cols-1 gap-3 w-full md:w-auto"
                                 >
                                     <StatCard icon={Star} value={anime.score || "N/A"} label="Score" color="yellow" />
                                     <StatCard icon={Award} value={anime.rank ? `#${anime.rank}` : "N/A"} label="Rank" color="blue" />
@@ -578,7 +578,7 @@ const AnimeDetail = () => {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="flex flex-wrap gap-3 mt-6"
+                                className="flex flex-wrap justify-center md:justify-start gap-4 mt-8"
                             >
                                 {anime.url && (
                                     <Button variant="outline" className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-sm font-semibold gap-2" asChild>
@@ -644,27 +644,27 @@ const AnimeDetail = () => {
 
                             {/* Characters Tab */}
                             <TabsContent value="characters">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                                     {characters.isLoading ? (
-                                        Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+                                        Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
                                     ) : characters.data?.data?.slice((charactersPage - 1) * ITEMS_PER_PAGE, charactersPage * ITEMS_PER_PAGE).map((c, i) => {
                                         const va = c.voice_actors?.find(v => v.language === "Japanese");
                                         return (
                                             <div key={i} className="group flex gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
-                                                <Link to={`/character/${c.character.mal_id}`} className="shrink-0 overflow-hidden rounded-lg h-20 w-14 bg-muted">
+                                                <Link to={`/character/${c.character.mal_id}`} className="shrink-0 overflow-hidden rounded-lg h-20 w-14 bg-muted shadow-lg">
                                                     <img src={c.character.images?.webp?.image_url} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                                                 </Link>
                                                 <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
                                                     <div>
                                                         <Link to={`/character/${c.character.mal_id}`} className="font-bold text-xs group-hover:text-primary transition-colors line-clamp-1">{c.character.name}</Link>
-                                                        <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-tight mt-0.5">{c.role}</p>
+                                                        <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest mt-0.5">{c.role}</p>
                                                     </div>
                                                     {va && (
-                                                        <Link to={`/person/${va.person.mal_id}`} className="flex items-center gap-1.5 group/va">
-                                                            <div className="h-4 w-4 rounded-full overflow-hidden border border-white/10">
+                                                        <Link to={`/person/${va.person.mal_id}`} className="flex items-center gap-1.5 group/va mt-auto">
+                                                            <div className="h-4 w-4 rounded-full overflow-hidden border border-white/10 shrink-0">
                                                                 <img src={va.person.images?.jpg?.image_url} alt="" className="h-full w-full object-cover" />
                                                             </div>
-                                                            <span className="text-[9px] font-medium text-muted-foreground group-hover/va:text-primary transition-colors truncate">{va.person.name}</span>
+                                                            <span className="text-[9px] font-bold text-muted-foreground group-hover/va:text-primary transition-colors truncate">{va.person.name}</span>
                                                         </Link>
                                                     )}
                                                 </div>
@@ -683,17 +683,17 @@ const AnimeDetail = () => {
 
                             {/* Staff Tab */}
                             <TabsContent value="staff">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                                     {staff.isLoading ? (
-                                        Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)
+                                        Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)
                                     ) : staff.data?.data?.slice((staffPage - 1) * ITEMS_PER_PAGE, staffPage * ITEMS_PER_PAGE).map((s, i) => (
                                         <Link key={i} to={`/person/${s.person.mal_id}`} className="group flex gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
-                                            <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
+                                            <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted shrink-0 shadow-lg">
                                                 <img src={s.person.images?.jpg?.image_url} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                                             </div>
                                             <div className="flex-1 pt-0.5 min-w-0">
                                                 <h4 className="font-bold text-xs group-hover:text-primary transition-colors truncate">{s.person.name}</h4>
-                                                <p className="text-[9px] text-muted-foreground font-semibold mt-0.5 uppercase tracking-widest truncate">{s.positions.join(", ")}</p>
+                                                <p className="text-[9px] text-muted-foreground font-black mt-0.5 uppercase tracking-widest truncate">{s.positions.join(", ")}</p>
                                             </div>
                                         </Link>
                                     ))}

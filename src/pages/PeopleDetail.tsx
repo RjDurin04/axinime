@@ -253,53 +253,54 @@ const PeopleDetail = () => {
                                     </div>
 
                                     {/* Name & Bio */}
-                                    <div className="flex-1 space-y-6">
-                                        <motion.div
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            className="space-y-4"
-                                        >
-                                            <div>
-                                                <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-2">
-                                                    {person.name}
-                                                </h1>
-                                                <div className="flex flex-wrap gap-2 text-lg text-foreground/70 font-semibold">
-                                                    {person.given_name && <span>{person.given_name}</span>}
-                                                    {person.family_name && <span>{person.family_name}</span>}
-                                                </div>
+                                     <div className="flex-1 space-y-6 text-center md:text-left">
+                                         <motion.div
+                                             initial={{ opacity: 0, x: -20 }}
+                                             animate={{ opacity: 1, x: 0 }}
+                                             className="space-y-4"
+                                         >
+                                             <div>
+                                                 <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+                                                     {person.name}
+                                                 </h1>
+                                                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-lg text-foreground/70 font-semibold">
+                                                     {person.given_name && <span>{person.given_name}</span>}
+                                                     {person.family_name && <span>{person.family_name}</span>}
+                                                 </div>
 
-                                                {person.alternate_names && person.alternate_names.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1.5 mt-3">
-                                                        {person.alternate_names.map((name, idx) => (
-                                                            <Badge key={idx} variant="secondary" className="px-2.5 py-0.5 text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground border-white/5 font-medium uppercase tracking-wider">
-                                                                {name}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
+                                                 {person.alternate_names && person.alternate_names.length > 0 && (
+                                                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 mt-3">
+                                                         {person.alternate_names.map((name, idx) => (
+                                                             <Badge key={idx} variant="secondary" className="px-2.5 py-0.5 text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground border-white/5 font-medium uppercase tracking-wider">
+                                                                 {name}
+                                                             </Badge>
+                                                         ))}
+                                                     </div>
+                                                 )}
+                                             </div>
 
-                                            <div className="flex flex-wrap gap-2">
-                                                {person.birthday && (
-                                                    <InfoChip
-                                                        icon={Calendar}
-                                                        label="Birthday"
-                                                        value={new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                                                    />
-                                                )}
-                                            </div>
+                                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                                                 {person.birthday && (
+                                                     <InfoChip
+                                                         icon={Calendar}
+                                                         label="Birthday"
+                                                         value={new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                     />
+                                                 )}
+                                             </div>
 
-                                            {/* Biography */}
-                                            <div className="pt-2">
-                                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                                                    <UserCircle className="h-4 w-4" /> Biography
-                                                </h4>
-                                                <div className="text-sm md:text-base text-muted-foreground/90 leading-relaxed max-w-[70ch] whitespace-pre-wrap font-medium">
-                                                    {person.about || "No biography available."}
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    </div>
+                                             {/* Biography */}
+                                             <div className="pt-2">
+                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3 flex items-center justify-center md:justify-start gap-2">
+                                                     <div className="h-4 w-1 bg-primary rounded-full" />
+                                                     Biography
+                                                 </h4>
+                                                 <div className="text-sm md:text-base text-muted-foreground/90 leading-relaxed max-w-[75ch] whitespace-pre-wrap font-medium bg-white/5 p-6 rounded-2xl border border-white/5 shadow-xl">
+                                                     {person.about || "No biography available."}
+                                                 </div>
+                                             </div>
+                                         </motion.div>
+                                     </div>
                                 </div>
 
                                 {/* Right Content: Sidebar (Col 9-12) */}

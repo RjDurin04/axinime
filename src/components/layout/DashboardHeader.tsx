@@ -1,19 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Shield, Command, Flame, Calendar, Trophy, Shuffle, Layers, Tags, Play, MessageSquare } from "lucide-react";
+import { Search, Shield, Command, Flame, Calendar, Trophy, Layers, Tags, Play, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useRandomAnime } from "@/hooks/useJikan";
 
 interface DashboardHeaderProps {
   sfwMode: boolean;
@@ -35,7 +27,6 @@ export function DashboardHeader({ sfwMode, onSfwChange }: DashboardHeaderProps) 
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const randomAnime = useRandomAnime(sfwMode);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,27 +37,22 @@ export function DashboardHeader({ sfwMode, onSfwChange }: DashboardHeaderProps) 
     }
   };
 
-  const handleRandom = async () => {
-    const result = await randomAnime.refetch();
-    if (result.data?.data) {
-      navigate(`/anime/${result.data.data.mal_id}`);
-    }
-  };
-
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="flex h-14 items-center justify-between px-4 md:px-6 gap-4">
         {/* Left: Logo + Nav */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-8">
           <motion.div
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center shadow-lg">
-                <span className="text-sm font-bold text-primary-foreground">A</span>
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="h-8 w-8 md:h-9 md:w-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <span className="text-sm md:text-base font-black text-primary-foreground">A</span>
               </div>
-              <span className="text-lg font-bold tracking-tight">AniDB</span>
+              <span className="text-base md:text-xl font-black tracking-tighter group-hover:text-primary transition-colors">
+                <span className="hidden xs:inline">Ani</span>DB
+              </span>
             </Link>
           </motion.div>
 
@@ -77,10 +63,10 @@ export function DashboardHeader({ sfwMode, onSfwChange }: DashboardHeaderProps) 
                 key={item.label}
                 to={item.href}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                  "flex items-center gap-2 px-3 lg:px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300",
                   location.pathname === item.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -117,18 +103,6 @@ export function DashboardHeader({ sfwMode, onSfwChange }: DashboardHeaderProps) 
             onClick={() => setSearchOpen(!searchOpen)}
           >
             <Search className="h-4 w-4" />
-          </Button>
-
-          {/* Random Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden sm:flex gap-1.5 h-9"
-            onClick={handleRandom}
-            disabled={randomAnime.isFetching}
-          >
-            <Shuffle className={cn("h-4 w-4", randomAnime.isFetching && "animate-spin")} />
-            <span className="hidden md:inline">Random</span>
           </Button>
 
           {/* SFW Toggle */}
