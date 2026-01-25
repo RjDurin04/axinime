@@ -656,6 +656,7 @@ export const PersonFullSchema = z.object({
   website_url: z.string().nullable().optional(),
   images: z.object({
     jpg: z.object({ image_url: z.string().nullable().optional() }).optional(),
+    webp: z.object({ image_url: z.string().nullable().optional() }).optional(),
   }).optional(),
   name: z.string(),
   given_name: z.string().nullable().optional(),
@@ -746,6 +747,7 @@ export const PersonSearchSchema = z.object({
   website_url: z.string().nullable().optional(),
   images: z.object({
     jpg: z.object({ image_url: z.string().nullable().optional() }).optional(),
+    webp: z.object({ image_url: z.string().nullable().optional() }).optional(),
   }).optional(),
   name: z.string(),
   given_name: z.string().nullable().optional(),

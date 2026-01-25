@@ -453,11 +453,26 @@ const AnimeDetail = () => {
                                         )}
                                     </div>
 
-                                    {/* Genres */}
+                                    {/* Genres, Explicit Genres, Demographics */}
                                     <div className="flex flex-wrap gap-1.5">
                                         {anime.genres?.map(g => (
                                             <Badge key={g.mal_id} className="bg-white/5 hover:bg-white/10 text-foreground/70 border-white/5 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">
                                                 {g.name}
+                                            </Badge>
+                                        ))}
+                                        {anime.explicit_genres?.map(g => (
+                                            <Badge key={g.mal_id} variant="destructive" className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                                                {g.name}
+                                            </Badge>
+                                        ))}
+                                        {anime.demographics?.map(d => (
+                                            <Badge key={d.mal_id} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                                                {d.name}
+                                            </Badge>
+                                        ))}
+                                        {anime.themes?.map(t => (
+                                            <Badge key={t.mal_id} variant="outline" className="text-[8px] h-5 px-2 border-blue-500/30 text-blue-400 rounded-full font-bold uppercase tracking-wider">
+                                                {t.name}
                                             </Badge>
                                         ))}
                                     </div>
@@ -503,21 +518,7 @@ const AnimeDetail = () => {
                                         )}
                                     </div>
 
-                                    {/* Themes & Demographics */}
-                                    {(anime.themes?.length > 0 || anime.demographics?.length > 0) && (
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {anime.themes?.map(t => (
-                                                <Badge key={t.mal_id} variant="outline" className="text-[8px] h-5 px-2 border-blue-500/30 text-blue-400">
-                                                    {t.name}
-                                                </Badge>
-                                            ))}
-                                            {anime.demographics?.map(d => (
-                                                <Badge key={d.mal_id} variant="outline" className="text-[8px] h-5 px-2 border-purple-500/30 text-purple-400">
-                                                    {d.name}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    )}
+
                                 </motion.div>
 
                                 {/* Stats Panel */}
@@ -567,10 +568,6 @@ const AnimeDetail = () => {
                                 transition={{ delay: 0.3 }}
                                 className="flex flex-wrap gap-3 mt-6"
                             >
-                                <Button className="h-10 px-6 rounded-xl gap-2 text-sm font-bold bg-primary hover:bg-primary/90">
-                                    <Heart className="h-4 w-4" />
-                                    Favorite
-                                </Button>
                                 {anime.url && (
                                     <Button variant="outline" className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-sm font-semibold gap-2" asChild>
                                         <a href={anime.url} target="_blank" rel="noopener noreferrer">

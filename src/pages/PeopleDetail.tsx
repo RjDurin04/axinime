@@ -1,33 +1,156 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, Heart, ExternalLink, Mic, Film, Globe } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    ArrowLeft, Heart, ExternalLink, Mic, Film, Globe,
+    Calendar, ChevronLeft, ChevronRight, Star,
+    User, BookOpen, UserCircle, Info
+} from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ErrorState } from "@/components/anime/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { usePersonFullDetails } from "@/hooks/useJikan";
+import { cn } from "@/lib/utils";
+
+// --- Components adapted from AnimeDetail ---
+
+const InfoChip = ({ icon: Icon, label, value }: { icon: any, label: string, value: string | number | null | undefined }) => {
+    if (!value) return null;
+    return (
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+            <Icon className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{label}</span>
+            <span className="text-xs font-bold text-foreground/90">{value}</span>
+        </div>
+    );
+};
+
+const StatCard = ({ icon: Icon, value, label, color = "primary" }: { icon: any, value: string | number, label: string, color?: string }) => (
+    <div className={cn(
+        "flex flex-col items-center justify-center p-3 rounded-xl border backdrop-blur-md transition-all hover:scale-[1.02]",
+        color === "yellow" ? "bg-yellow-500/10 border-yellow-500/20" :
+            color === "blue" ? "bg-blue-500/10 border-blue-500/20" :
+                color === "red" ? "bg-red-500/10 border-red-500/20" :
+                    color === "pink" ? "bg-pink-500/10 border-pink-500/20" :
+                        "bg-primary/10 border-primary/20"
+    )}>
+        <Icon className={cn(
+            "h-4 w-4 mb-1",
+            color === "yellow" ? "text-yellow-500" :
+                color === "blue" ? "text-blue-500" :
+                    color === "red" ? "text-red-500" :
+                        color === "pink" ? "text-pink-500" :
+                            "text-primary"
+        )} />
+        <span className={cn(
+            "text-lg font-black tracking-tight",
+            color === "yellow" ? "text-yellow-500" :
+                color === "blue" ? "text-blue-500" :
+                    color === "red" ? "text-red-500" :
+                        color === "pink" ? "text-pink-500" :
+                            "text-primary"
+        )}>{value}</span>
+        <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">{label}</span>
+    </div>
+);
+
+const PaginationControls = ({
+    currentPage,
+    totalPages,
+    onPageChange
+}: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+}) => {
+    if (totalPages <= 1) return null;
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 3) {
+                pages.push(1, 2, 3, 4, '...', totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+            }
+        }
+        return pages;
+    };
+
+    return (
+        <div className="flex items-center justify-center gap-1 mt-6">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0 rounded-lg"
+            >
+                <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {getPageNumbers().map((page, i) => (
+                typeof page === 'number' ? (
+                    <Button
+                        key={i}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => onPageChange(page)}
+                        className={cn(
+                            "h-8 w-8 p-0 rounded-lg text-xs font-bold",
+                            currentPage === page && "bg-primary text-primary-foreground"
+                        )}
+                    >
+                        {page}
+                    </Button>
+                ) : (
+                    <span key={i} className="px-1 text-muted-foreground">...</span>
+                )
+            ))}
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0 rounded-lg"
+            >
+                <ChevronRight className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+};
+
+const ITEMS_PER_PAGE = 24;
 
 const PeopleDetail = () => {
     const { id } = useParams<{ id: string }>();
     const personId = parseInt(id || "0");
     const [sfwMode, setSfwMode] = useState(true);
 
-    const personDetails = usePersonFullDetails(personId);
+    // Pagination states
+    const [voicesPage, setVoicesPage] = useState(1);
+    const [positionsPage, setPositionsPage] = useState(1);
+    const [mangaPage, setMangaPage] = useState(1);
 
+    const personDetails = usePersonFullDetails(personId);
     const person = personDetails.data?.data;
-    const personImage = person?.images?.jpg?.image_url || "";
+    const personImage = person?.images?.webp?.image_url || person?.images?.jpg?.image_url || ""; // Try webp first for better quality/performance
 
     return (
         <DashboardLayout sfwMode={sfwMode} onSfwChange={setSfwMode}>
             {personDetails.isLoading ? (
-                <div className="p-4 md:p-6 space-y-6">
-                    <Skeleton className="h-8 w-32" />
-                    <div className="flex flex-col md:flex-row gap-6">
-                        <Skeleton className="w-full md:w-64 aspect-[3/4] rounded-lg" />
-                        <div className="flex-1 space-y-4">
+                <div className="p-4 space-y-4">
+                    <Skeleton className="h-[300px] w-full rounded-2xl" />
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Skeleton className="h-[300px] rounded-2xl" />
+                        <div className="md:col-span-3 space-y-3">
                             <Skeleton className="h-8 w-3/4" />
                             <Skeleton className="h-4 w-1/2" />
                             <Skeleton className="h-24 w-full" />
@@ -35,276 +158,322 @@ const PeopleDetail = () => {
                     </div>
                 </div>
             ) : personDetails.error ? (
-                <div className="p-6">
-                    <ErrorState onRetry={() => personDetails.refetch()} />
+                <div className="p-8">
+                    <ErrorState message="Failed to load person details" onRetry={() => personDetails.refetch()} />
                 </div>
             ) : person ? (
-                <div className="flex flex-col">
-                    {/* Hero Banner Area */}
-                    <div className="relative h-[120px] md:h-[160px] overflow-hidden">
-                        {personImage && (
-                            <img
-                                src={personImage}
-                                alt={person.name}
-                                className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-20 scale-150"
-                            />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/60 to-background" />
+                <div className="relative pb-12">
+                    {/* Compact Hero Section */}
+                    <div className="relative min-h-[350px] w-full overflow-hidden">
+                        {/* Background */}
+                        <div className="absolute inset-0">
+                            {personImage && (
+                                <img
+                                    src={personImage}
+                                    className="w-full h-full object-cover blur-[60px] scale-110 opacity-20"
+                                    alt=""
+                                />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
+                        </div>
 
                         {/* Back Button */}
-                        <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20">
-                            <Link
-                                to="/"
-                                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-300 group"
+                        <div className="absolute top-4 left-4 z-20">
+                            <button
+                                onClick={() => window.history.back()}
+                                className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-primary transition-all group"
                             >
-                                <div className="h-9 w-9 rounded-full bg-background/50 backdrop-blur-md border border-border/50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110 shadow-lg transition-all">
-                                    <ArrowLeft className="h-5 w-5" />
-                                </div>
-                                <span className="drop-shadow-md">Back</span>
-                            </Link>
+                                <ArrowLeft className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                            </button>
                         </div>
-                    </div>
 
-                    {/* Main Content */}
-                    <div className="px-4 md:px-6 -mt-10 md:-mt-14 relative z-10">
-                        <div className="flex flex-col md:flex-row gap-6">
-                            {/* Person Image */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="shrink-0"
-                            >
-                                <div className="w-40 md:w-56 rounded-lg overflow-hidden shadow-2xl border border-border/50">
-                                    {personImage ? (
+                        {/* Main Content Grid */}
+                        <div className="relative z-10 pt-16 pb-6 px-4 md:px-6 max-w-7xl mx-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-[180px_1fr_200px] gap-6 items-start">
+                                {/* Poster */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="hidden md:block"
+                                >
+                                    <div className="w-[180px] aspect-[2/3] rounded-xl overflow-hidden border border-white/10 shadow-2xl group">
                                         <img
                                             src={personImage}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                             alt={person.name}
-                                            className="w-full aspect-[3/4] object-cover"
                                         />
-                                    ) : (
-                                        <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
-                                            <span className="text-muted-foreground text-sm">No Image</span>
+                                    </div>
+                                </motion.div>
+
+                                {/* Center Info */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="space-y-4"
+                                >
+                                    {/* Title/Name */}
+                                    <div>
+                                        <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">
+                                            {person.name}
+                                        </h1>
+                                        <div className="flex flex-wrap gap-2 text-base text-foreground/70 font-semibold mt-0.5">
+                                            {person.given_name && <span>{person.given_name}</span>}
+                                            {person.family_name && <span>{person.family_name}</span>}
                                         </div>
-                                    )}
+
+                                        {/* Alternate Names */}
+                                        {person.alternate_names && person.alternate_names.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                {person.alternate_names.map((name, idx) => (
+                                                    <Badge key={idx} variant="secondary" className="px-2 py-0.5 text-[9px] bg-white/5 hover:bg-white/10 text-muted-foreground border-white/5">
+                                                        {name}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Metadata Chips */}
+                                    <div className="flex flex-wrap gap-2">
+                                        {person.birthday && (
+                                            <InfoChip
+                                                icon={Calendar}
+                                                label="Birthday"
+                                                value={new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                            />
+                                        )}
+                                        {/* We don't have blood type in the default Person type usually, but if it exists in API response we could add it. 
+                                            Checking the types, usually 'about' contains it or extended details. 
+                                            Current type definition might be limited, but we will preserve what we can see from properties. 
+                                            Jikan PersonFull often has 'website_url' (url in type). */}
+                                    </div>
+
+                                    {/* About/Bio Teaser - Short version if needed, or full bio below */}
+                                    {/* Moved full bio to below the grid to match AnimeDetail synopsis placement */}
+
+                                </motion.div>
+
+                                {/* Stats Panel */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="grid grid-cols-1 gap-2"
+                                >
+                                    {/* Using single column for stats here as we have fewer numeric stats than anime */}
+                                    <StatCard
+                                        icon={Heart}
+                                        value={person.favorites?.toLocaleString() || "0"}
+                                        label="Favorites"
+                                        color="red"
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {/* Computed stats from arrays */}
+                                        <StatCard
+                                            icon={Mic}
+                                            value={person.voices?.length || 0}
+                                            label="Roles"
+                                            color="blue"
+                                        />
+                                        <StatCard
+                                            icon={Film}
+                                            value={person.anime?.length || 0}
+                                            label="Staff"
+                                            color="yellow"
+                                        />
+                                    </div>
+                                </motion.div>
+                            </div>
+
+                            {/* Biography / About */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="mt-8 max-w-4xl"
+                            >
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                                    <UserCircle className="h-4 w-4" /> Biography
+                                </h4>
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/5 text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap">
+                                    {person.about || "No biography available."}
                                 </div>
                             </motion.div>
 
-                            {/* Info */}
+                            {/* Action Buttons */}
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="flex-1 space-y-4"
+                                transition={{ delay: 0.3 }}
+                                className="flex flex-wrap gap-3 mt-6"
                             >
-                                <div className="space-y-1">
-                                    <h1 className="text-2xl md:text-4xl font-bold leading-tight">
-                                        {person.name}
-                                    </h1>
-                                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                                        {person.given_name && <span>{person.given_name}</span>}
-                                        {person.family_name && <span>{person.family_name}</span>}
-                                    </div>
-                                </div>
-
-                                {/* Stats & Metadata */}
-                                <div className="flex flex-wrap items-center gap-3">
-                                    {person.favorites && (
-                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10">
-                                            <Heart className="h-4 w-4 fill-red-400 text-red-400" />
-                                            <span className="font-semibold text-red-400">{person.favorites.toLocaleString()}</span>
-                                            <span className="text-xs text-muted-foreground">favorites</span>
-                                        </div>
-                                    )}
-                                    {person.birthday && (
-                                        <Badge variant="outline" className="px-3 py-1 text-sm bg-card/50">
-                                            🎂 {new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                                        </Badge>
-                                    )}
-                                </div>
-
-                                {/* Alternate Names */}
-                                {person.alternate_names && person.alternate_names.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Also known as:</span>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {person.alternate_names.map((name, idx) => (
-                                                <Badge key={idx} variant="secondary" className="text-[10px] font-normal">
-                                                    {name}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
+                                {person.url && (
+                                    <Button variant="outline" className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-sm font-semibold gap-2" asChild>
+                                        <a href={person.url} target="_blank" rel="noopener noreferrer">
+                                            <ExternalLink className="h-4 w-4" />
+                                            MyAnimeList
+                                        </a>
+                                    </Button>
                                 )}
-
-                                {/* About */}
-                                {person.about && (
-                                    <div className="bg-card/30 backdrop-blur-sm p-4 rounded-xl border border-border/50 max-h-[250px] overflow-y-auto custom-scrollbar">
-                                        <h4 className="text-xs font-bold uppercase tracking-widest mb-2 text-primary">Biography</h4>
-                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                                            {person.about}
-                                        </p>
-                                    </div>
+                                {person.website_url && (
+                                    <Button variant="outline" className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-sm font-semibold gap-2" asChild>
+                                        <a href={person.website_url} target="_blank" rel="noopener noreferrer">
+                                            <Globe className="h-4 w-4" />
+                                            Website
+                                        </a>
+                                    </Button>
                                 )}
-
-                                {/* Links */}
-                                <div className="flex flex-wrap gap-2">
-                                    {person.url && (
-                                        <Button variant="outline" size="sm" asChild className="rounded-full gap-2">
-                                            <a href={person.url} target="_blank" rel="noopener noreferrer">
-                                                <ExternalLink className="h-3.5 w-3.5" />
-                                                MyAnimeList
-                                            </a>
-                                        </Button>
-                                    )}
-                                    {person.website_url && (
-                                        <Button variant="outline" size="sm" asChild className="rounded-full gap-2">
-                                            <a href={person.website_url} target="_blank" rel="noopener noreferrer">
-                                                <Globe className="h-3.5 w-3.5" />
-                                                Website
-                                            </a>
-                                        </Button>
-                                    )}
-                                </div>
                             </motion.div>
                         </div>
                     </div>
 
-                    {/* Tabs / Detailed Sections */}
-                    <div className="px-4 md:px-6 py-12">
-                        <Tabs defaultValue="voices" className="space-y-6">
-                            <TabsList className="bg-card/50 p-1 border border-border/50 inline-flex">
-                                <TabsTrigger value="voices" className="gap-2 px-6">
-                                    <Mic className="h-4 w-4" />
-                                    Voice Roles
-                                </TabsTrigger>
-                                <TabsTrigger value="anime" className="gap-2 px-6">
-                                    <Film className="h-4 w-4" />
-                                    Staff Positions
-                                </TabsTrigger>
-                                <TabsTrigger value="manga" className="gap-2 px-6">
-                                    <Globe className="h-4 w-4" />
-                                    Manga
-                                </TabsTrigger>
-                            </TabsList>
+                    {/* Tabs Section */}
+                    <div className="max-w-7xl mx-auto px-4 md:px-6 mt-8">
+                        <Tabs defaultValue="voices" className="w-full">
+                            <ScrollArea className="w-full whitespace-nowrap mb-6 border border-white/5 rounded-xl bg-white/5 p-0.5">
+                                <TabsList className="bg-transparent h-11 w-full flex justify-start">
+                                    <TabsTrigger value="voices" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5 transition-all font-bold uppercase tracking-widest text-[9px] px-4">
+                                        <Mic className="h-3.5 w-3.5" />Voice Roles
+                                        <span className="ml-1 opacity-60">({person.voices?.length || 0})</span>
+                                    </TabsTrigger>
+                                    <TabsTrigger value="staff" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5 transition-all font-bold uppercase tracking-widest text-[9px] px-4">
+                                        <Film className="h-3.5 w-3.5" />Staff Positions
+                                        <span className="ml-1 opacity-60">({person.anime?.length || 0})</span>
+                                    </TabsTrigger>
+                                    <TabsTrigger value="manga" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5 transition-all font-bold uppercase tracking-widest text-[9px] px-4">
+                                        <BookOpen className="h-3.5 w-3.5" />Manga
+                                        <span className="ml-1 opacity-60">({person.manga?.length || 0})</span>
+                                    </TabsTrigger>
+                                </TabsList>
+                                <ScrollBar orientation="horizontal" />
+                            </ScrollArea>
 
                             {/* Voice Roles Tab */}
-                            <TabsContent value="voices" className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        <Mic className="h-5 w-5 text-primary" />
-                                        Voice Acting Profile
-                                        <span className="text-sm font-normal text-muted-foreground ml-2">({person.voices?.length || 0} characters)</span>
-                                    </h3>
-                                </div>
-
-                                {person.voices && person.voices.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {person.voices.map((v, idx) => (
-                                            <div key={idx} className="flex gap-3 bg-card/40 p-3 rounded-xl border border-border/50 group hover:border-primary/30 transition-all">
+                            <TabsContent value="voices">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {person.voices && person.voices.length > 0 ? (
+                                        person.voices.slice((voicesPage - 1) * ITEMS_PER_PAGE, voicesPage * ITEMS_PER_PAGE).map((v, idx) => (
+                                            <div key={idx} className="group flex gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
                                                 {/* Character Image */}
-                                                <Link to={`/character/${v.character.mal_id}`} className="shrink-0">
-                                                    <div className="w-16 h-20 rounded-lg overflow-hidden border border-border/50">
-                                                        <img
-                                                            src={v.character.images?.webp?.image_url || v.character.images?.jpg?.image_url || ""}
-                                                            alt={v.character.name}
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                        />
-                                                    </div>
+                                                <Link to={`/character/${v.character.mal_id}`} className="shrink-0 overflow-hidden rounded-lg h-20 w-14 bg-muted">
+                                                    <img
+                                                        src={v.character.images?.webp?.image_url || v.character.images?.jpg?.image_url}
+                                                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                        alt={v.character.name}
+                                                    />
                                                 </Link>
 
-                                                <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                                                {/* Info */}
+                                                <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
                                                     <div>
-                                                        <Link to={`/character/${v.character.mal_id}`} className="font-bold text-sm block hover:text-primary transition-colors line-clamp-1">
+                                                        <Link to={`/character/${v.character.mal_id}`} className="font-bold text-xs group-hover:text-primary transition-colors line-clamp-1">
                                                             {v.character.name}
                                                         </Link>
-                                                        <p className="text-[10px] text-primary uppercase font-bold tracking-tight">{v.role}</p>
+                                                        <p className="text-[9px] text-primary font-bold uppercase tracking-wide mt-0.5">{v.role}</p>
                                                     </div>
 
-                                                    <Link to={`/anime/${v.anime.mal_id}`} className="text-xs text-muted-foreground hover:text-foreground transition-colors line-clamp-1 italic">
-                                                        {v.anime.title}
+                                                    {/* Anime Link */}
+                                                    <Link to={`/anime/${v.anime.mal_id}`} className="flex items-center gap-1.5 group/anime mt-2">
+                                                        <div className="h-5 w-5 rounded overflow-hidden border border-white/10 shrink-0">
+                                                            <img
+                                                                src={v.anime.images?.webp?.image_url || v.anime.images?.jpg?.image_url}
+                                                                alt=""
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <span className="text-[10px] text-muted-foreground group-hover/anime:text-foreground transition-colors line-clamp-1">
+                                                            {v.anime.title}
+                                                        </span>
                                                     </Link>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-12 text-center bg-card/20 rounded-2xl border border-dashed border-border">
-                                        <p className="text-muted-foreground text-sm">No voice acting roles found.</p>
-                                    </div>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-12 text-center text-muted-foreground bg-white/5 rounded-xl border border-dashed border-white/10">
+                                            <Mic className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            <p className="text-sm">No voice acting roles found.</p>
+                                        </div>
+                                    )}
+                                </div>
+                                {person.voices && (
+                                    <PaginationControls
+                                        currentPage={voicesPage}
+                                        totalPages={Math.ceil(person.voices.length / ITEMS_PER_PAGE)}
+                                        onPageChange={setVoicesPage}
+                                    />
                                 )}
                             </TabsContent>
 
                             {/* Staff Positions Tab */}
-                            <TabsContent value="anime" className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        <Film className="h-5 w-5 text-primary" />
-                                        Staff Portfolio
-                                        <span className="text-sm font-normal text-muted-foreground ml-2">({person.anime?.length || 0} credits)</span>
-                                    </h3>
-                                </div>
-
-                                {person.anime && person.anime.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {person.anime.map((a, idx) => (
-                                            <div key={idx} className="flex gap-3 bg-card/40 p-3 rounded-xl border border-border/50 group hover:border-primary/30 transition-all">
-                                                <Link to={`/anime/${a.anime.mal_id}`} className="shrink-0">
-                                                    <div className="w-16 h-20 rounded-lg overflow-hidden border border-border/50">
-                                                        <img
-                                                            src={a.anime.images?.webp?.image_url || a.anime.images?.jpg?.image_url || ""}
-                                                            alt={a.anime.title}
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                        />
-                                                    </div>
-                                                </Link>
-
-                                                <div className="flex-1 min-w-0 py-1 flex flex-col">
-                                                    <Link to={`/anime/${a.anime.mal_id}`} className="font-bold text-sm block hover:text-primary transition-colors line-clamp-2 mb-1">
-                                                        {a.anime.title}
-                                                    </Link>
-                                                    <Badge variant="secondary" className="text-[10px] w-fit font-medium">
+                            <TabsContent value="staff">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {person.anime && person.anime.length > 0 ? (
+                                        person.anime.slice((positionsPage - 1) * ITEMS_PER_PAGE, positionsPage * ITEMS_PER_PAGE).map((a, idx) => (
+                                            <Link key={idx} to={`/anime/${a.anime.mal_id}`} className="group flex gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
+                                                <div className="h-16 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
+                                                    <img
+                                                        src={a.anime.images?.webp?.image_url || a.anime.images?.jpg?.image_url}
+                                                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                        alt={a.anime.title}
+                                                    />
+                                                </div>
+                                                <div className="flex-1 py-0.5 min-w-0">
+                                                    <h4 className="font-bold text-xs group-hover:text-primary transition-colors line-clamp-2">{a.anime.title}</h4>
+                                                    <Badge variant="secondary" className="mt-1.5 text-[8px] font-semibold h-5 px-1.5 bg-white/10 hover:bg-white/20 text-foreground/80">
                                                         {a.position}
                                                     </Badge>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-12 text-center bg-card/20 rounded-2xl border border-dashed border-border">
-                                        <p className="text-muted-foreground text-sm">No staff credits found.</p>
-                                    </div>
+                                            </Link>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-12 text-center text-muted-foreground bg-white/5 rounded-xl border border-dashed border-white/10">
+                                            <Film className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            <p className="text-sm">No staff credits found.</p>
+                                        </div>
+                                    )}
+                                </div>
+                                {person.anime && (
+                                    <PaginationControls
+                                        currentPage={positionsPage}
+                                        totalPages={Math.ceil(person.anime.length / ITEMS_PER_PAGE)}
+                                        onPageChange={setPositionsPage}
+                                    />
                                 )}
                             </TabsContent>
 
                             {/* Manga Tab */}
-                            <TabsContent value="manga" className="space-y-6">
-                                <h3 className="text-xl font-bold flex items-center gap-2">
-                                    📚 Manga & Publishing
-                                    <span className="text-sm font-normal text-muted-foreground ml-2">({person.manga?.length || 0} credits)</span>
-                                </h3>
-
-                                {person.manga && person.manga.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {person.manga.map((m, idx) => (
-                                            <div key={idx} className="flex gap-3 bg-card/40 p-3 rounded-xl border border-border/50">
-                                                <div className="w-16 h-20 rounded-lg overflow-hidden border border-border/50 shrink-0">
+                            <TabsContent value="manga">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {person.manga && person.manga.length > 0 ? (
+                                        person.manga.slice((mangaPage - 1) * ITEMS_PER_PAGE, mangaPage * ITEMS_PER_PAGE).map((m, idx) => (
+                                            <div key={idx} className="flex gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-all">
+                                                <div className="h-16 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
                                                     <img
-                                                        src={m.manga.images?.webp?.image_url || m.manga.images?.jpg?.image_url || ""}
+                                                        src={m.manga.images?.webp?.image_url || m.manga.images?.jpg?.image_url}
+                                                        className="h-full w-full object-cover"
                                                         alt={m.manga.title}
-                                                        className="w-full h-full object-cover"
                                                     />
                                                 </div>
-                                                <div className="flex-1 min-w-0 py-1">
-                                                    <p className="font-bold text-sm line-clamp-2 mb-1">{m.manga.title}</p>
-                                                    <Badge variant="outline" className="text-[10px]">{m.position}</Badge>
+                                                <div className="flex-1 py-0.5 min-w-0">
+                                                    <p className="font-bold text-xs line-clamp-2 mb-1">{m.manga.title}</p>
+                                                    <Badge variant="outline" className="text-[8px] border-white/10 text-muted-foreground">
+                                                        {m.position}
+                                                    </Badge>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-12 text-center bg-card/20 rounded-2xl border border-dashed border-border">
-                                        <p className="text-muted-foreground text-sm">No manga credits found.</p>
-                                    </div>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-12 text-center text-muted-foreground bg-white/5 rounded-xl border border-dashed border-white/10">
+                                            <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            <p className="text-sm">No manga credits found.</p>
+                                        </div>
+                                    )}
+                                </div>
+                                {person.manga && (
+                                    <PaginationControls
+                                        currentPage={mangaPage}
+                                        totalPages={Math.ceil(person.manga.length / ITEMS_PER_PAGE)}
+                                        onPageChange={setMangaPage}
+                                    />
                                 )}
                             </TabsContent>
                         </Tabs>
