@@ -14,12 +14,14 @@ import Seasons from "./pages/Seasons";
 import Genres from "./pages/Genres";
 import Reviews from "./pages/Reviews";
 import PeopleDetail from "./pages/PeopleDetail";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 const App = () => (
   <TooltipProvider>
     <Toaster />
     <Sonner />
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/schedule" element={<Schedule />} />

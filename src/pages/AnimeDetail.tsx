@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -347,6 +347,18 @@ const AnimeDetail = () => {
     const [newsPage, setNewsPage] = useState(1);
     const [forumPage, setForumPage] = useState(1);
 
+    const tabsRef = useRef<HTMLDivElement>(null);
+
+    const handlePageChange = (setter: (page: number) => void, page: number) => {
+        setter(page);
+        if (tabsRef.current) {
+            const yOffset = -100; // Offset to not hide the tabs header behind fixed headers if any
+            const element = tabsRef.current;
+            const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+    };
+
     // Queries
     const details = useAnimeFullDetails(animeId);
     const characters = useAnimeCharacters(animeId);
@@ -589,7 +601,7 @@ const AnimeDetail = () => {
                     </div>
 
                     {/* Tabs Section */}
-                    <div className="max-w-7xl mx-auto px-4 md:px-6 mt-6">
+                    <div className="max-w-7xl mx-auto px-4 md:px-6 mt-6" ref={tabsRef}>
                         <Tabs defaultValue="characters" className="w-full">
                             <ScrollArea className="w-full whitespace-nowrap mb-6 border border-white/5 rounded-xl bg-white/5 p-0.5">
                                 <TabsList className="bg-transparent h-11 w-full flex justify-start">
@@ -664,7 +676,7 @@ const AnimeDetail = () => {
                                     <PaginationControls
                                         currentPage={charactersPage}
                                         totalPages={Math.ceil(characters.data.data.length / ITEMS_PER_PAGE)}
-                                        onPageChange={setCharactersPage}
+                                        onPageChange={(page) => handlePageChange(setCharactersPage, page)}
                                     />
                                 )}
                             </TabsContent>
@@ -690,7 +702,7 @@ const AnimeDetail = () => {
                                     <PaginationControls
                                         currentPage={staffPage}
                                         totalPages={Math.ceil(staff.data.data.length / ITEMS_PER_PAGE)}
-                                        onPageChange={setStaffPage}
+                                        onPageChange={(page) => handlePageChange(setStaffPage, page)}
                                     />
                                 )}
                             </TabsContent>
@@ -713,7 +725,7 @@ const AnimeDetail = () => {
                                         <PaginationControls
                                             currentPage={episodePage}
                                             totalPages={Math.ceil(episodes.data.data.length / EPISODES_PER_PAGE)}
-                                            onPageChange={setEpisodePage}
+                                            onPageChange={(page) => handlePageChange(setEpisodePage, page)}
                                         />
                                     )}
                                 </div>
@@ -739,7 +751,7 @@ const AnimeDetail = () => {
                                     <PaginationControls
                                         currentPage={reviewsPage}
                                         totalPages={Math.ceil(reviews.data.data.length / ITEMS_PER_PAGE)}
-                                        onPageChange={setReviewsPage}
+                                        onPageChange={(page) => handlePageChange(setReviewsPage, page)}
                                     />
                                 )}
                             </TabsContent>
@@ -776,7 +788,7 @@ const AnimeDetail = () => {
                                     <PaginationControls
                                         currentPage={similarPage}
                                         totalPages={Math.ceil(recommendations.data.data.length / ITEMS_PER_PAGE)}
-                                        onPageChange={setSimilarPage}
+                                        onPageChange={(page) => handlePageChange(setSimilarPage, page)}
                                     />
                                 )}
                             </TabsContent>

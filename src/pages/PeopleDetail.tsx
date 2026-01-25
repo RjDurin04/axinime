@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -139,6 +139,18 @@ const PeopleDetail = () => {
     const [positionsPage, setPositionsPage] = useState(1);
     const [mangaPage, setMangaPage] = useState(1);
 
+    const tabsRef = useRef<HTMLDivElement>(null);
+
+    const handlePageChange = (setter: (page: number) => void, page: number) => {
+        setter(page);
+        if (tabsRef.current) {
+            const yOffset = -100;
+            const element = tabsRef.current;
+            const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+    };
+
     const personDetails = usePersonFullDetails(personId);
     const person = personDetails.data?.data;
     const personImage = person?.images?.webp?.image_url || person?.images?.jpg?.image_url || ""; // Try webp first for better quality/performance
@@ -189,145 +201,147 @@ const PeopleDetail = () => {
 
                         {/* Main Content Grid */}
                         <div className="relative z-10 pt-16 pb-6 px-4 md:px-6 max-w-7xl mx-auto">
-                            <div className="grid grid-cols-1 md:grid-cols-[180px_1fr_200px] gap-6 items-start">
-                                {/* Poster */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="hidden md:block"
-                                >
-                                    <div className="w-[180px] aspect-[2/3] rounded-xl overflow-hidden border border-white/10 shadow-2xl group">
-                                        <img
-                                            src={personImage}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                            alt={person.name}
-                                        />
-                                    </div>
-                                </motion.div>
-
-                                {/* Center Info */}
-                                <motion.div
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    className="space-y-4"
-                                >
-                                    {/* Title/Name */}
-                                    <div>
-                                        <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">
-                                            {person.name}
-                                        </h1>
-                                        <div className="flex flex-wrap gap-2 text-base text-foreground/70 font-semibold mt-0.5">
-                                            {person.given_name && <span>{person.given_name}</span>}
-                                            {person.family_name && <span>{person.family_name}</span>}
-                                        </div>
-
-                                        {/* Alternate Names */}
-                                        {person.alternate_names && person.alternate_names.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                {person.alternate_names.map((name, idx) => (
-                                                    <Badge key={idx} variant="secondary" className="px-2 py-0.5 text-[9px] bg-white/5 hover:bg-white/10 text-muted-foreground border-white/5">
-                                                        {name}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Metadata Chips */}
-                                    <div className="flex flex-wrap gap-2">
-                                        {person.birthday && (
-                                            <InfoChip
-                                                icon={Calendar}
-                                                label="Birthday"
-                                                value={new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                                {/* Left Content: Profile & Bio (Col 1-8) */}
+                                <div className="lg:col-span-8 flex flex-col md:flex-row gap-8">
+                                    {/* Profile Image & Buttons */}
+                                    <div className="shrink-0 space-y-4">
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="w-[200px] aspect-[2/3] rounded-2xl overflow-hidden border border-white/10 shadow-2xl group mx-auto md:mx-0"
+                                        >
+                                            <img
+                                                src={personImage}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                alt={person.name}
                                             />
-                                        )}
-                                        {/* We don't have blood type in the default Person type usually, but if it exists in API response we could add it. 
-                                            Checking the types, usually 'about' contains it or extended details. 
-                                            Current type definition might be limited, but we will preserve what we can see from properties. 
-                                            Jikan PersonFull often has 'website_url' (url in type). */}
+                                        </motion.div>
+
+                                        {/* Action Buttons under Profile Image */}
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="flex flex-col gap-2"
+                                        >
+                                            {person.url && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-xs font-bold gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
+                                                    asChild
+                                                >
+                                                    <a href={person.url} target="_blank" rel="noopener noreferrer">
+                                                        <ExternalLink className="h-4 w-4" />
+                                                        MyAnimeList
+                                                    </a>
+                                                </Button>
+                                            )}
+                                            {person.website_url && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-xs font-bold gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
+                                                    asChild
+                                                >
+                                                    <a href={person.website_url} target="_blank" rel="noopener noreferrer">
+                                                        <Globe className="h-4 w-4" />
+                                                        Website
+                                                    </a>
+                                                </Button>
+                                            )}
+                                        </motion.div>
                                     </div>
 
-                                    {/* About/Bio Teaser - Short version if needed, or full bio below */}
-                                    {/* Moved full bio to below the grid to match AnimeDetail synopsis placement */}
+                                    {/* Name & Bio */}
+                                    <div className="flex-1 space-y-6">
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="space-y-4"
+                                        >
+                                            <div>
+                                                <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-2">
+                                                    {person.name}
+                                                </h1>
+                                                <div className="flex flex-wrap gap-2 text-lg text-foreground/70 font-semibold">
+                                                    {person.given_name && <span>{person.given_name}</span>}
+                                                    {person.family_name && <span>{person.family_name}</span>}
+                                                </div>
 
-                                </motion.div>
+                                                {person.alternate_names && person.alternate_names.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 mt-3">
+                                                        {person.alternate_names.map((name, idx) => (
+                                                            <Badge key={idx} variant="secondary" className="px-2.5 py-0.5 text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground border-white/5 font-medium uppercase tracking-wider">
+                                                                {name}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                {/* Stats Panel */}
-                                <motion.div
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    className="grid grid-cols-1 gap-2"
-                                >
-                                    {/* Using single column for stats here as we have fewer numeric stats than anime */}
-                                    <StatCard
-                                        icon={Heart}
-                                        value={person.favorites?.toLocaleString() || "0"}
-                                        label="Favorites"
-                                        color="red"
-                                    />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {/* Computed stats from arrays */}
-                                        <StatCard
-                                            icon={Mic}
-                                            value={person.voices?.length || 0}
-                                            label="Roles"
-                                            color="blue"
-                                        />
-                                        <StatCard
-                                            icon={Film}
-                                            value={person.anime?.length || 0}
-                                            label="Staff"
-                                            color="yellow"
-                                        />
+                                            <div className="flex flex-wrap gap-2">
+                                                {person.birthday && (
+                                                    <InfoChip
+                                                        icon={Calendar}
+                                                        label="Birthday"
+                                                        value={new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                    />
+                                                )}
+                                            </div>
+
+                                            {/* Biography */}
+                                            <div className="pt-2">
+                                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                                                    <UserCircle className="h-4 w-4" /> Biography
+                                                </h4>
+                                                <div className="text-sm md:text-base text-muted-foreground/90 leading-relaxed max-w-[70ch] whitespace-pre-wrap font-medium">
+                                                    {person.about || "No biography available."}
+                                                </div>
+                                            </div>
+                                        </motion.div>
                                     </div>
-                                </motion.div>
-                            </div>
-
-                            {/* Biography / About */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="mt-8 max-w-4xl"
-                            >
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                                    <UserCircle className="h-4 w-4" /> Biography
-                                </h4>
-                                <div className="p-4 rounded-xl bg-white/5 border border-white/5 text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap">
-                                    {person.about || "No biography available."}
                                 </div>
-                            </motion.div>
 
-                            {/* Action Buttons */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="flex flex-wrap gap-3 mt-6"
-                            >
-                                {person.url && (
-                                    <Button variant="outline" className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-sm font-semibold gap-2" asChild>
-                                        <a href={person.url} target="_blank" rel="noopener noreferrer">
-                                            <ExternalLink className="h-4 w-4" />
-                                            MyAnimeList
-                                        </a>
-                                    </Button>
-                                )}
-                                {person.website_url && (
-                                    <Button variant="outline" className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-sm font-semibold gap-2" asChild>
-                                        <a href={person.website_url} target="_blank" rel="noopener noreferrer">
-                                            <Globe className="h-4 w-4" />
-                                            Website
-                                        </a>
-                                    </Button>
-                                )}
-                            </motion.div>
+                                {/* Right Content: Sidebar (Col 9-12) */}
+                                <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
+                                    <motion.div
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className="p-6 rounded-3xl bg-white/[0.03] backdrop-blur-xl border border-white/10 flex flex-col gap-4 shadow-2xl relative overflow-hidden group"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mb-2 px-1">Statistics</h3>
+
+                                        <StatCard
+                                            icon={Heart}
+                                            value={person.favorites?.toLocaleString() || "0"}
+                                            label="Favorites"
+                                            color="red"
+                                        />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <StatCard
+                                                icon={Mic}
+                                                value={person.voices?.length || 0}
+                                                label="Voice Roles"
+                                                color="blue"
+                                            />
+                                            <StatCard
+                                                icon={Film}
+                                                value={person.anime?.length || 0}
+                                                label="Staff Credits"
+                                                color="yellow"
+                                            />
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            </div>
                         </div>
+
                     </div>
 
                     {/* Tabs Section */}
-                    <div className="max-w-7xl mx-auto px-4 md:px-6 mt-8">
+                    <div className="max-w-7xl mx-auto px-4 md:px-6 mt-8" ref={tabsRef}>
                         <Tabs defaultValue="voices" className="w-full">
                             <ScrollArea className="w-full whitespace-nowrap mb-6 border border-white/5 rounded-xl bg-white/5 p-0.5">
                                 <TabsList className="bg-transparent h-11 w-full flex justify-start">
@@ -398,7 +412,7 @@ const PeopleDetail = () => {
                                     <PaginationControls
                                         currentPage={voicesPage}
                                         totalPages={Math.ceil(person.voices.length / ITEMS_PER_PAGE)}
-                                        onPageChange={setVoicesPage}
+                                        onPageChange={(page) => handlePageChange(setVoicesPage, page)}
                                     />
                                 )}
                             </TabsContent>
@@ -435,7 +449,7 @@ const PeopleDetail = () => {
                                     <PaginationControls
                                         currentPage={positionsPage}
                                         totalPages={Math.ceil(person.anime.length / ITEMS_PER_PAGE)}
-                                        onPageChange={setPositionsPage}
+                                        onPageChange={(page) => handlePageChange(setPositionsPage, page)}
                                     />
                                 )}
                             </TabsContent>
@@ -472,7 +486,7 @@ const PeopleDetail = () => {
                                     <PaginationControls
                                         currentPage={mangaPage}
                                         totalPages={Math.ceil(person.manga.length / ITEMS_PER_PAGE)}
-                                        onPageChange={setMangaPage}
+                                        onPageChange={(page) => handlePageChange(setMangaPage, page)}
                                     />
                                 )}
                             </TabsContent>
