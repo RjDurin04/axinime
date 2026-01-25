@@ -332,6 +332,43 @@ export function useAnimeEpisodes(id: number, page: number = 1) {
   });
 }
 
+// Hook for ALL anime episodes (fetches all pages)
+export function useAllAnimeEpisodes(id: number) {
+  return useQuery({
+    queryKey: ["allAnimeEpisodes", id],
+    queryFn: async () => {
+      await delay(400);
+      // Fetch page 1
+      const firstPage = await fetchWithRetry(`${JIKAN_BASE_URL}/anime/${id}/episodes?page=1`, (data) => EpisodeResponseSchema.parse(data));
+
+      let allEpisodes = [...(firstPage.data || [])];
+      const lastPage = firstPage.pagination?.last_visible_page || 1;
+
+      if (lastPage > 1) {
+        // Fetch remaining pages sequentially to respect rate limits
+        for (let i = 2; i <= lastPage; i++) {
+          await delay(400); // Rate limit buffer
+          try {
+            const pageData = await fetchWithRetry(`${JIKAN_BASE_URL}/anime/${id}/episodes?page=${i}`, (data) => EpisodeResponseSchema.parse(data));
+            if (pageData.data) {
+              allEpisodes = [...allEpisodes, ...pageData.data];
+            }
+          } catch (err) {
+            console.error(`Failed to fetch episode page ${i}`, err);
+            // Continue processing what we have
+          }
+        }
+      }
+
+      return { data: allEpisodes };
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour
+    gcTime: 1000 * 60 * 60 * 2, // 2 hours
+    retry: 2,
+    enabled: !!id,
+  });
+}
+
 // Hook for anime reviews
 export function useAnimeReviews(id: number, page: number = 1) {
   return useQuery({
