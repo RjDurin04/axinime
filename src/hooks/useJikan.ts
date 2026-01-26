@@ -33,46 +33,287 @@ import {
   PersonVoicesResponseSchema,
   PersonSearchResponseSchema,
   PersonPicturesResponseSchema,
+  PersonMangaResponseSchema,
   type AnimeListResponse,
   type RecommendationResponse,
 } from "@/lib/schemas";
 
 const JIKAN_BASE_URL = "https://api.jikan.moe/v4";
 
-// Rate limit helper - simple delay between requests
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// ============================================================================
+// CUSTOM ERROR TYPES
+// ============================================================================
 
-// Fetch with retry logic for 429 errors
+/** Base error class for all Jikan API errors */
+export class JikanError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly type: string,
+    message: string,
+    public readonly originalError?: unknown
+  ) {
+    super(message);
+    this.name = "JikanError";
+  }
+}
+
+/** 429 - Rate limited by Jikan or MyAnimeList */
+export class RateLimitError extends JikanError {
+  constructor(
+    public readonly retryAfter: number,
+    message = "Rate limited. Please wait before retrying."
+  ) {
+    super(429, "RateLimitException", message);
+    this.name = "RateLimitError";
+  }
+}
+
+/** 404 - Resource not found */
+export class NotFoundError extends JikanError {
+  constructor(message = "The requested resource was not found.") {
+    super(404, "BadResponseException", message);
+    this.name = "NotFoundError";
+  }
+}
+
+/** 400 - Invalid request parameters */
+export class BadRequestError extends JikanError {
+  constructor(message = "Invalid request. Please check parameters.") {
+    super(400, "BadRequestException", message);
+    this.name = "BadRequestError";
+  }
+}
+
+/** 500 - Internal server error */
+export class InternalServerError extends JikanError {
+  constructor(
+    message = "Server error. Please try again later.",
+    public readonly reportUrl?: string
+  ) {
+    super(500, "InternalException", message);
+    this.name = "InternalServerError";
+  }
+}
+
+/** 503 - Service unavailable (maintenance) */
+export class ServiceUnavailableError extends JikanError {
+  constructor(message = "Service temporarily unavailable. Please try again later.") {
+    super(503, "ServiceUnavailableException", message);
+    this.name = "ServiceUnavailableError";
+  }
+}
+
+/** Network failure - fetch failed entirely */
+export class NetworkError extends JikanError {
+  constructor(message = "Network error. Please check your connection.", originalError?: unknown) {
+    super(0, "NetworkError", message, originalError);
+    this.name = "NetworkError";
+  }
+}
+
+/** Request timed out */
+export class TimeoutError extends JikanError {
+  constructor(message = "Request timed out. Please try again.") {
+    super(0, "TimeoutError", message);
+    this.name = "TimeoutError";
+  }
+}
+
+// ============================================================================
+// GLOBAL RATE LIMITER - Sequential Queue
+// ============================================================================
+
+/**
+ * Sequential rate limiter that ensures requests are spaced out properly.
+ * Jikan allows 3 req/sec, but we use 2 req/sec (500ms) to be safe and avoid 429s.
+ * Requests are processed one at a time in order.
+ */
+class RateLimiter {
+  private queue: Array<() => void> = [];
+  private isProcessing = false;
+  private lastRequestTime = 0;
+  private readonly minInterval = 500; // 500ms = 2 requests per second (safe margin)
+
+  async acquire(): Promise<void> {
+    return new Promise((resolve) => {
+      this.queue.push(resolve);
+      this.processNext();
+    });
+  }
+
+  private async processNext() {
+    // If already processing, the current processor will handle remaining items
+    if (this.isProcessing) return;
+    if (this.queue.length === 0) return;
+
+    this.isProcessing = true;
+
+    while (this.queue.length > 0) {
+      const now = Date.now();
+      const timeSinceLastRequest = now - this.lastRequestTime;
+      const waitTime = Math.max(0, this.minInterval - timeSinceLastRequest);
+
+      if (waitTime > 0) {
+        await new Promise((r) => setTimeout(r, waitTime));
+      }
+
+      const next = this.queue.shift();
+      if (next) {
+        this.lastRequestTime = Date.now();
+        next();
+      }
+    }
+
+    this.isProcessing = false;
+  }
+
+  /** Get current queue length for debugging */
+  get pending(): number {
+    return this.queue.length;
+  }
+}
+
+const globalRateLimiter = new RateLimiter();
+
+// ============================================================================
+// ENHANCED FETCH WITH RETRY
+// ============================================================================
+
+const REQUEST_TIMEOUT_MS = 10000; // 10 seconds
+
+/** Parse Jikan error response body */
+async function parseErrorResponse(response: Response): Promise<{
+  message?: string;
+  type?: string;
+  reportUrl?: string;
+}> {
+  try {
+    const data = await response.json();
+    return {
+      message: data.message || data.error,
+      type: data.type,
+      reportUrl: data.report_url,
+    };
+  } catch {
+    return {};
+  }
+}
+
+/** Create appropriate error based on HTTP status */
+async function createHttpError(response: Response): Promise<JikanError> {
+  const errorInfo = await parseErrorResponse(response);
+  const message = errorInfo.message;
+
+  switch (response.status) {
+    case 400:
+      return new BadRequestError(message);
+    case 404:
+      return new NotFoundError(message);
+    case 429: {
+      const retryAfter = parseInt(response.headers.get("Retry-After") || "2", 10);
+      return new RateLimitError(retryAfter, message);
+    }
+    case 500:
+      return new InternalServerError(message, errorInfo.reportUrl);
+    case 503:
+      return new ServiceUnavailableError(message);
+    default:
+      return new JikanError(response.status, errorInfo.type || "UnknownError", message || `HTTP error ${response.status}`);
+  }
+}
+
+/** Fetch with retry logic, timeout, and granular error handling */
 async function fetchWithRetry<T>(
   url: string,
   parseSchema: (data: unknown) => T,
   retries = 3
 ): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url);
+  // Wait for rate limiter before starting
+  await globalRateLimiter.acquire();
 
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      // Success - parse and return
+      if (response.ok) {
+        const data = await response.json();
+        return parseSchema(data);
+      }
+
+      // Rate limited - wait and retry
       if (response.status === 429) {
-        // Rate limited - wait and retry
-        const retryAfter = parseInt(response.headers.get("Retry-After") || "2");
+        const retryAfter = parseInt(response.headers.get("Retry-After") || "2", 10);
+        console.warn(`[Jikan] Rate limited. Waiting ${retryAfter + 1}s before retry...`);
         await delay((retryAfter + 1) * 1000);
         continue;
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Non-retryable errors - throw immediately
+      if (response.status === 400 || response.status === 404) {
+        throw await createHttpError(response);
       }
 
-      const data = await response.json();
-      return parseSchema(data);
+      // Server errors - may retry
+      if (response.status >= 500) {
+        const error = await createHttpError(response);
+        if (attempt === retries - 1) throw error;
+        console.warn(`[Jikan] Server error (${response.status}). Retrying in ${(attempt + 1)}s...`);
+        await delay(1000 * (attempt + 1));
+        continue;
+      }
+
+      // Other errors - throw
+      throw await createHttpError(response);
+
     } catch (error) {
-      console.error(`Fetch attempt ${i + 1} failed for URL: ${url}`, error);
-      if (i === retries - 1) throw error;
-      await delay(1000 * (i + 1));
+      clearTimeout(timeoutId);
+
+      // Handle specific error types
+      if (error instanceof JikanError) {
+        throw error;
+      }
+
+      // Timeout (AbortError)
+      if (error instanceof DOMException && error.name === "AbortError") {
+        if (attempt === retries - 1) {
+          throw new TimeoutError();
+        }
+        console.warn(`[Jikan] Request timed out. Retrying...`);
+        await delay(1000 * (attempt + 1));
+        continue;
+      }
+
+      // Network errors
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        if (attempt === retries - 1) {
+          throw new NetworkError("Failed to fetch. Check your internet connection.", error);
+        }
+        console.warn(`[Jikan] Network error. Retrying in ${(attempt + 1)}s...`);
+        await delay(1000 * (attempt + 1));
+        continue;
+      }
+
+      // Unknown errors
+      console.error(`[Jikan] Fetch attempt ${attempt + 1} failed:`, error);
+      if (attempt === retries - 1) {
+        throw error instanceof Error
+          ? new JikanError(0, "UnknownError", error.message, error)
+          : new JikanError(0, "UnknownError", "An unknown error occurred", error);
+      }
+      await delay(1000 * (attempt + 1));
     }
   }
-  throw new Error("Max retries exceeded");
+
+  throw new JikanError(0, "MaxRetriesExceeded", "Maximum retry attempts exceeded");
 }
+
+// Helper for delay - used within hooks for staggered requests
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Hook for top airing anime
 export function useTopAiring(sfw: boolean = true, limit: number = 5) {
@@ -94,7 +335,6 @@ export function useSeasonNow(sfw: boolean = true, limit: number = 10) {
   return useQuery({
     queryKey: ["seasonNow", sfw, limit],
     queryFn: async () => {
-      await delay(400);
       const sfwParam = sfw ? "&sfw=true" : "";
       const url = `${JIKAN_BASE_URL}/seasons/now?limit=${limit}${sfwParam}`;
       return fetchWithRetry(url, (data) => AnimeListResponseSchema.parse(data));
@@ -110,7 +350,6 @@ export function useSeasonUpcoming(sfw: boolean = true, limit: number = 10) {
   return useQuery({
     queryKey: ["seasonUpcoming", sfw, limit],
     queryFn: async () => {
-      await delay(600);
       const sfwParam = sfw ? "&sfw=true" : "";
       const url = `${JIKAN_BASE_URL}/seasons/upcoming?limit=${limit}${sfwParam}`;
       return fetchWithRetry(url, (data) => AnimeListResponseSchema.parse(data));
@@ -126,7 +365,6 @@ export function useSeasonAnime(year: number, season: string, sfw: boolean = true
   return useQuery({
     queryKey: ["seasonAnime", year, season, sfw, limit],
     queryFn: async () => {
-      await delay(600);
       const sfwParam = sfw ? "&sfw=true" : "";
       const url = `${JIKAN_BASE_URL}/seasons/${year}/${season}?limit=${limit}${sfwParam}`;
       return fetchWithRetry(url, (data) => AnimeListResponseSchema.parse(data));
@@ -143,7 +381,6 @@ export function useSeasonsList() {
   return useQuery({
     queryKey: ["seasonsList"],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/seasons`;
       return fetchWithRetry(url, (data) => SeasonListResponseSchema.parse(data));
     },
@@ -158,7 +395,6 @@ export function useRecommendations(limit: number = 6) {
   return useQuery({
     queryKey: ["recommendations", limit],
     queryFn: async () => {
-      await delay(800);
       const url = `${JIKAN_BASE_URL}/recommendations/anime?page=1`;
       return fetchWithRetry(url, (data) =>
         RecommendationResponseSchema.parse(data)
@@ -179,7 +415,6 @@ export function useTopAnime(sfw: boolean = true, limit: number = 10, filter?: st
   return useQuery({
     queryKey: ["topAnime", sfw, limit, filter],
     queryFn: async () => {
-      await delay(600);
       const sfwParam = sfw ? "&sfw=true" : "";
       const filterParam = filter ? `&filter=${filter}` : "";
       const url = `${JIKAN_BASE_URL}/top/anime?limit=${limit}${sfwParam}${filterParam}`;
@@ -196,7 +431,6 @@ export function useSchedules(day?: string, sfw: boolean = true) {
   return useQuery({
     queryKey: ["schedules", day, sfw],
     queryFn: async () => {
-      await delay(600);
       const sfwParam = sfw ? "sfw=true" : "";
       const dayParam = day ? `filter=${day}` : "";
       const params = [dayParam, sfwParam].filter(Boolean).join("&");
@@ -229,7 +463,6 @@ export function useAnimeSearch(
   return useQuery({
     queryKey: ["animeSearch", query, page, limit, orderBy, sort, genres, type, score, minScore, sfw],
     queryFn: async () => {
-      await delay(300);
       const params = new URLSearchParams();
       if (query) params.append("q", query);
       params.append("page", String(page));
@@ -257,7 +490,6 @@ export function useAnimeDetails(id: number) {
   return useQuery({
     queryKey: ["animeDetails", id],
     queryFn: async () => {
-      await delay(300);
       const url = `${JIKAN_BASE_URL}/anime/${id}`;
       return fetchWithRetry(url, (data) => AnimeResponseSchema.parse(data));
     },
@@ -273,7 +505,6 @@ export function useAnimeFullDetails(id: number) {
   return useQuery({
     queryKey: ["animeFullDetails", id],
     queryFn: async () => {
-      await delay(300);
       const url = `${JIKAN_BASE_URL}/anime/${id}/full`;
       return fetchWithRetry(url, (data) => AnimeFullResponseSchema.parse(data));
     },
@@ -289,7 +520,6 @@ export function useAnimeCharacters(id: number) {
   return useQuery({
     queryKey: ["animeCharacters", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/characters`;
       return fetchWithRetry(url, (data) => CharacterResponseSchema.parse(data));
     },
@@ -305,7 +535,6 @@ export function useAnimeRecommendations(id: number) {
   return useQuery({
     queryKey: ["animeRecommendations", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/recommendations`;
       return fetchWithRetry(url, (data) => AnimeRecommendationResponseSchema.parse(data));
     },
@@ -321,7 +550,6 @@ export function useAnimeEpisodes(id: number, page: number = 1) {
   return useQuery({
     queryKey: ["animeEpisodes", id, page],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/episodes?page=${page}`;
       return fetchWithRetry(url, (data) => EpisodeResponseSchema.parse(data));
     },
@@ -337,7 +565,6 @@ export function useAllAnimeEpisodes(id: number) {
   return useQuery({
     queryKey: ["allAnimeEpisodes", id],
     queryFn: async () => {
-      await delay(400);
       // Fetch page 1
       const firstPage = await fetchWithRetry(`${JIKAN_BASE_URL}/anime/${id}/episodes?page=1`, (data) => EpisodeResponseSchema.parse(data));
 
@@ -347,7 +574,6 @@ export function useAllAnimeEpisodes(id: number) {
       if (lastPage > 1) {
         // Fetch remaining pages sequentially to respect rate limits
         for (let i = 2; i <= lastPage; i++) {
-          await delay(400); // Rate limit buffer
           try {
             const pageData = await fetchWithRetry(`${JIKAN_BASE_URL}/anime/${id}/episodes?page=${i}`, (data) => EpisodeResponseSchema.parse(data));
             if (pageData.data) {
@@ -374,7 +600,6 @@ export function useAnimeReviews(id: number, page: number = 1) {
   return useQuery({
     queryKey: ["animeReviews", id, page],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/reviews?page=${page}`;
       return fetchWithRetry(url, (data) => ReviewResponseSchema.parse(data));
     },
@@ -406,7 +631,6 @@ export function useGenresList() {
   return useQuery({
     queryKey: ["genresList"],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/genres/anime`;
       return fetchWithRetry(url, (data) => GenreListResponseSchema.parse(data));
     },
@@ -421,7 +645,6 @@ export function useAnimeStaff(id: number) {
   return useQuery({
     queryKey: ["animeStaff", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/staff`;
       return fetchWithRetry(url, (data) => StaffResponseSchema.parse(data));
     },
@@ -437,7 +660,6 @@ export function useAnimeNews(id: number) {
   return useQuery({
     queryKey: ["animeNews", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/news`;
       return fetchWithRetry(url, (data) => NewsResponseSchema.parse(data));
     },
@@ -453,7 +675,6 @@ export function useAnimeForum(id: number) {
   return useQuery({
     queryKey: ["animeForum", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/forum`;
       return fetchWithRetry(url, (data) => ForumResponseSchema.parse(data));
     },
@@ -469,7 +690,6 @@ export function useAnimeStatistics(id: number) {
   return useQuery({
     queryKey: ["animeStatistics", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/statistics`;
       return fetchWithRetry(url, (data) => StatisticsResponseSchema.parse(data));
     },
@@ -485,7 +705,6 @@ export function useAnimePictures(id: number) {
   return useQuery({
     queryKey: ["animePictures", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/pictures`;
       return fetchWithRetry(url, (data) => PicturesResponseSchema.parse(data));
     },
@@ -501,7 +720,6 @@ export function useAnimeVideos(id: number) {
   return useQuery({
     queryKey: ["animeVideos", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/videos`;
       return fetchWithRetry(url, (data) => VideosResponseSchema.parse(data));
     },
@@ -517,7 +735,6 @@ export function useAnimeMoreInfo(id: number) {
   return useQuery({
     queryKey: ["animeMoreInfo", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/moreinfo`;
       return fetchWithRetry(url, (data) => MoreInfoResponseSchema.parse(data));
     },
@@ -533,7 +750,6 @@ export function useAnimeEpisodeById(id: number, episodeId: number) {
   return useQuery({
     queryKey: ["animeEpisodeDetail", id, episodeId],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/episodes/${episodeId}`;
       return fetchWithRetry(url, (data) => EpisodeDetailResponseSchema.parse(data));
     },
@@ -549,7 +765,6 @@ export function useAnimeUserUpdates(id: number) {
   return useQuery({
     queryKey: ["animeUserUpdates", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/userupdates`;
       return fetchWithRetry(url, (data) => UserUpdatesResponseSchema.parse(data));
     },
@@ -565,7 +780,6 @@ export function useAnimeRelations(id: number) {
   return useQuery({
     queryKey: ["animeRelations", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/relations`;
       return fetchWithRetry(url, (data) => RelationsResponseSchema.parse(data));
     },
@@ -581,7 +795,6 @@ export function useAnimeThemes(id: number) {
   return useQuery({
     queryKey: ["animeThemes", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/themes`;
       return fetchWithRetry(url, (data) => ThemesResponseSchema.parse(data));
     },
@@ -597,7 +810,6 @@ export function useAnimeExternal(id: number) {
   return useQuery({
     queryKey: ["animeExternal", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/external`;
       return fetchWithRetry(url, (data) => ExternalResponseSchema.parse(data));
     },
@@ -613,7 +825,6 @@ export function useAnimeStreaming(id: number) {
   return useQuery({
     queryKey: ["animeStreaming", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/anime/${id}/streaming`;
       return fetchWithRetry(url, (data) => StreamingResponseSchema.parse(data));
     },
@@ -631,7 +842,6 @@ export function useCharacterFullDetails(id: number) {
   return useQuery({
     queryKey: ["characterFullDetails", id],
     queryFn: async () => {
-      await delay(300);
       const url = `${JIKAN_BASE_URL}/characters/${id}/full`;
       return fetchWithRetry(url, (data) => CharacterFullResponseSchema.parse(data));
     },
@@ -647,7 +857,6 @@ export function useCharacterAnime(id: number) {
   return useQuery({
     queryKey: ["characterAnime", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/characters/${id}/anime`;
       return fetchWithRetry(url, (data) => CharacterAnimeResponseSchema.parse(data));
     },
@@ -663,7 +872,6 @@ export function useCharacterVoices(id: number) {
   return useQuery({
     queryKey: ["characterVoices", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/characters/${id}/voices`;
       return fetchWithRetry(url, (data) => CharacterVoicesResponseSchema.parse(data));
     },
@@ -679,7 +887,6 @@ export function useCharacterPictures(id: number) {
   return useQuery({
     queryKey: ["characterPictures", id],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/characters/${id}/pictures`;
       return fetchWithRetry(url, (data) => CharacterPicturesResponseSchema.parse(data));
     },
@@ -697,7 +904,6 @@ export function useRecentEpisodes() {
   return useQuery({
     queryKey: ["recentEpisodes"],
     queryFn: async () => {
-      await delay(500);
       const url = `${JIKAN_BASE_URL}/watch/episodes`;
       return fetchWithRetry(url, (data) => WatchEpisodesResponseSchema.parse(data));
     },
@@ -712,7 +918,6 @@ export function usePopularEpisodes() {
   return useQuery({
     queryKey: ["popularEpisodes"],
     queryFn: async () => {
-      await delay(500);
       const url = `${JIKAN_BASE_URL}/watch/episodes/popular`;
       return fetchWithRetry(url, (data) => WatchEpisodesResponseSchema.parse(data));
     },
@@ -727,7 +932,6 @@ export function useTopReviews() {
   return useQuery({
     queryKey: ["topReviews"],
     queryFn: async () => {
-      await delay(600);
       const url = `${JIKAN_BASE_URL}/top/reviews`;
       return fetchWithRetry(url, (data) => ReviewResponseSchema.parse(data));
     },
@@ -742,7 +946,6 @@ export function useGlobalRecommendations() {
   return useQuery({
     queryKey: ["globalRecommendations"],
     queryFn: async () => {
-      await delay(700);
       const url = `${JIKAN_BASE_URL}/recommendations/anime`;
       return fetchWithRetry(url, (data) => RecommendationResponseSchema.parse(data));
     },
@@ -757,7 +960,6 @@ export function useCharacterSearch(query: string, page: number = 1) {
   return useQuery({
     queryKey: ["characterSearch", query, page],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/characters?q=${encodeURIComponent(query)}&page=${page}`;
       return fetchWithRetry(url, (data) => CharacterResponseSchema.parse(data));
     },
@@ -773,7 +975,6 @@ export function usePersonSearch(query: string, page: number = 1) {
   return useQuery({
     queryKey: ["personSearch", query, page],
     queryFn: async () => {
-      await delay(400);
       const url = `${JIKAN_BASE_URL}/people?q=${encodeURIComponent(query)}&page=${page}`;
       return fetchWithRetry(url, (data) => PersonSearchResponseSchema.parse(data));
     },
@@ -789,7 +990,6 @@ export function usePersonFullDetails(id: number) {
   return useQuery({
     queryKey: ["personFull", id],
     queryFn: async () => {
-      await delay(500);
       const url = `${JIKAN_BASE_URL}/people/${id}/full`;
       return fetchWithRetry(url, (data) => PersonFullResponseSchema.parse(data));
     },
@@ -805,7 +1005,6 @@ export function usePersonAnime(id: number) {
   return useQuery({
     queryKey: ["personAnime", id],
     queryFn: async () => {
-      await delay(500);
       const url = `${JIKAN_BASE_URL}/people/${id}/anime`;
       return fetchWithRetry(url, (data) => PersonAnimeResponseSchema.parse(data));
     },
@@ -820,7 +1019,6 @@ export function usePersonVoices(id: number) {
   return useQuery({
     queryKey: ["personVoices", id],
     queryFn: async () => {
-      await delay(500);
       const url = `${JIKAN_BASE_URL}/people/${id}/voices`;
       return fetchWithRetry(url, (data) => PersonVoicesResponseSchema.parse(data));
     },
@@ -835,9 +1033,22 @@ export function usePersonPictures(id: number) {
   return useQuery({
     queryKey: ["personPictures", id],
     queryFn: async () => {
-      await delay(500);
       const url = `${JIKAN_BASE_URL}/people/${id}/pictures`;
       return fetchWithRetry(url, (data) => PersonPicturesResponseSchema.parse(data));
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour
+    retry: 2,
+    enabled: id > 0,
+  });
+}
+
+// Hook for person manga credits
+export function usePersonManga(id: number) {
+  return useQuery({
+    queryKey: ["personManga", id],
+    queryFn: async () => {
+      const url = `${JIKAN_BASE_URL}/people/${id}/manga`;
+      return fetchWithRetry(url, (data) => PersonMangaResponseSchema.parse(data));
     },
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 2,

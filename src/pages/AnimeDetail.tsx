@@ -542,6 +542,7 @@ const AnimeDetail = () => {
                                     <StatCard icon={Star} value={anime.score || "N/A"} label="Score" color="yellow" />
                                     <StatCard icon={Award} value={anime.rank ? `#${anime.rank}` : "N/A"} label="Rank" color="blue" />
                                     <StatCard icon={TrendingUp} value={anime.popularity ? `#${anime.popularity}` : "N/A"} label="Popular" color="red" />
+                                    <StatCard icon={Users} value={anime.members?.toLocaleString() || "0"} label="Members" color="green" />
                                     <StatCard icon={Heart} value={anime.favorites?.toLocaleString() || "0"} label="Favs" color="pink" />
                                 </motion.div>
                             </div>
@@ -558,18 +559,34 @@ const AnimeDetail = () => {
                                 </p>
                             </motion.div>
 
-                            {/* Background */}
-                            {anime.background && (
+                            {/* Background & Synonyms */}
+                            {(anime.background || (anime.title_synonyms?.length ?? 0) > 0) && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.25 }}
-                                    className="mt-4 max-w-4xl p-3 rounded-lg bg-white/5 border border-white/5"
+                                    className="mt-4 max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4"
                                 >
-                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Background</h4>
-                                    <p className="text-xs text-muted-foreground/70 leading-relaxed">
-                                        {anime.background}
-                                    </p>
+                                    {anime.background && (
+                                        <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Background</h4>
+                                            <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                                                {anime.background}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {(anime.title_synonyms?.length ?? 0) > 0 && (
+                                        <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Alternative Names</h4>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {anime.title_synonyms?.map((syn, i) => (
+                                                    <Badge key={i} variant="outline" className="text-[9px] border-white/10 text-muted-foreground/80 lowercase">
+                                                        {syn}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
 

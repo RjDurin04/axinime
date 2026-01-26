@@ -47,11 +47,11 @@ export function DashboardHeader({ sfwMode, onSfwChange }: DashboardHeaderProps) 
             animate={{ opacity: 1, x: 0 }}
           >
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="h-8 w-8 md:h-9 md:w-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <span className="text-sm md:text-base font-black text-primary-foreground">A</span>
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl overflow-hidden shadow-lg group-hover:scale-110 transition-transform">
+                <img src="/logo.jpg" alt="Axinime Logo" className="w-full h-full object-cover" />
               </div>
               <span className="text-base md:text-xl font-black tracking-tighter group-hover:text-primary transition-colors">
-                <span className="hidden xs:inline">Ani</span>DB
+                Axinime
               </span>
             </Link>
           </motion.div>

@@ -238,10 +238,35 @@ export const ExternalResponseSchema = z.object({
   data: z.array(ExternalSchema),
 });
 
-// Streaming Schema
-// Using ExternalSchema structure for simplicity as they are identical {name, url}
 export const StreamingResponseSchema = z.object({
   data: z.array(ExternalSchema),
+});
+
+// Image schema for Jikan API
+export const ImageSchema = z.object({
+  image_url: z.string().nullable().optional(),
+  small_image_url: z.string().nullable().optional(),
+  large_image_url: z.string().nullable().optional(),
+});
+
+export const ImagesSchema = z.object({
+  jpg: ImageSchema.optional(),
+  webp: ImageSchema.optional(),
+});
+
+// Person Manga Schema
+export const PersonMangaSchema = z.object({
+  position: z.string(),
+  manga: z.object({
+    mal_id: z.number(),
+    url: z.string().optional(),
+    images: ImagesSchema.optional(),
+    title: z.string(),
+  }),
+});
+
+export const PersonMangaResponseSchema = z.object({
+  data: z.array(PersonMangaSchema),
 });
 
 // Watch Episodes Schema (for /watch/episodes and /watch/episodes/popular)
@@ -282,18 +307,6 @@ export const WatchEpisodesResponseSchema = z.object({
   }).optional(),
 });
 
-// Image schema for Jikan API
-export const ImageSchema = z.object({
-  image_url: z.string().nullable().optional(),
-  small_image_url: z.string().nullable().optional(),
-  large_image_url: z.string().nullable().optional(),
-});
-
-export const ImagesSchema = z.object({
-  jpg: ImageSchema.optional(),
-  webp: ImageSchema.optional(),
-});
-
 // Genre schema
 export const GenreSchema = z.object({
   mal_id: z.number(),
@@ -325,6 +338,7 @@ export const AnimeSchema = z.object({
   title: z.string(),
   title_english: z.string().nullable().optional(),
   title_japanese: z.string().nullable().optional(),
+  title_synonyms: z.array(z.string()).optional().default([]),
   images: ImagesSchema,
   synopsis: z.string().nullable().optional(),
   score: z.number().nullable().optional(),

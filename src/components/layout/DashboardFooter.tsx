@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Github, ExternalLink, Heart, Tv, Calendar, Database, Sparkles } from "lucide-react";
+import { ExternalLink, Heart, Tv, Calendar, Database, Sparkles } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useTopAnime, useTopAiring, useSeasonUpcoming } from "@/hooks/useJikan";
 
@@ -107,27 +107,15 @@ export function DashboardFooter() {
           {/* Brand Column */}
           <div className="col-span-2 lg:col-span-2 space-y-4 pr-0 lg:pr-12">
             <Link to="/" className="flex items-center gap-2.5 w-fit group">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all duration-300">
-                <span className="text-lg font-bold text-white">A</span>
+              <div className="h-12 w-12 rounded-xl overflow-hidden shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all duration-300">
+                <img src="/logo.jpg" alt="Axinime Logo" className="w-full h-full object-cover" />
               </div>
-              <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">AniDB</span>
+              <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Axinime</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
               The ultimate destination for anime enthusiasts. Built with modern web technologies to provide the best user experience.
             </p>
             <div className="flex items-center gap-3 pt-2">
-              {[
-                { icon: Github, href: "#", label: "GitHub" }
-              ].map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  className="h-10 w-10 rounded-full bg-secondary/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/20 transition-all duration-300 hover:scale-110"
-                  aria-label={social.label}
-                >
-                  <social.icon className="h-4 w-4" />
-                </a>
-              ))}
             </div>
           </div>
 
@@ -176,11 +164,8 @@ export function DashboardFooter() {
         <div className="container px-4 md:px-6 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
             <p className="text-xs text-muted-foreground/60">
-              © {new Date().getFullYear()} AniDB. Data provided by Jikan API.
+              © {new Date().getFullYear()} Axinime. Data provided by Jikan API.
             </p>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 font-medium">
-              Made with <Heart className="h-3 w-3 text-red-500 fill-red-500 animate-pulse" /> for anime fans worldwide
-            </div>
           </div>
         </div>
       </div>

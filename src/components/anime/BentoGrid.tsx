@@ -34,11 +34,11 @@ export function BentoGrid({ animes, title }: BentoGridProps) {
             index={0}
           />
         )}
-        
+
         {/* Portrait cards */}
         {animes.slice(1, 3).map((anime, i) => (
           <BentoCard
-            key={anime.mal_id}
+            key={`${anime.mal_id}-${i + 1}`}
             anime={anime}
             className="col-span-1 row-span-1"
             index={i + 1}
@@ -58,7 +58,7 @@ export function BentoGrid({ animes, title }: BentoGridProps) {
         {/* More portrait cards */}
         {animes.slice(4, 8).map((anime, i) => (
           <BentoCard
-            key={anime.mal_id}
+            key={`${anime.mal_id}-${i + 4}`}
             anime={anime}
             className="col-span-1 row-span-1"
             index={i + 4}

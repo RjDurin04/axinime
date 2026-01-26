@@ -32,7 +32,7 @@ export function SeasonGrid({ animes, title, scrollable = false }: SeasonGridProp
         <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex gap-3 pb-3">
             {animes.map((anime, index) => (
-              <SeasonCard key={anime.mal_id} anime={anime} index={index} />
+              <SeasonCard key={`${anime.mal_id}-${index}`} anime={anime} index={index} />
             ))}
           </div>
           <ScrollBar orientation="horizontal" />
@@ -40,7 +40,7 @@ export function SeasonGrid({ animes, title, scrollable = false }: SeasonGridProp
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-3 md:gap-4">
           {animes.map((anime, index) => (
-            <SeasonCard key={anime.mal_id} anime={anime} index={index} />
+            <SeasonCard key={`${anime.mal_id}-${index}`} anime={anime} index={index} />
           ))}
         </div>
       )}

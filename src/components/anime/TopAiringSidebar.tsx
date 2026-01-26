@@ -39,7 +39,7 @@ export const TopAiringSidebar = ({ animes, isLoading }: TopAiringSidebarProps) =
                     ))
                 ) : animes?.map((anime, index) => (
                     <motion.div
-                        key={anime.mal_id}
+                        key={`${anime.mal_id}-${index}`}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}

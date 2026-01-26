@@ -2196,3 +2196,31 @@ get
     }
   }
 }
+
+get
+/people/{id}/manga
+
+{
+  "data": [
+    {
+      "position": "string",
+      "manga": {
+        "mal_id": 0,
+        "url": "string",
+        "images": {
+          "jpg": {
+            "image_url": "string",
+            "small_image_url": "string",
+            "large_image_url": "string"
+          },
+          "webp": {
+            "image_url": "string",
+            "small_image_url": "string",
+            "large_image_url": "string"
+          }
+        },
+        "title": "string"
+      }
+    }
+  ]
+}

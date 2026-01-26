@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { usePersonFullDetails } from "@/hooks/useJikan";
+import { usePersonFullDetails, usePersonManga } from "@/hooks/useJikan";
 import { cn } from "@/lib/utils";
 
 // --- Components adapted from AnimeDetail ---
@@ -152,6 +152,8 @@ const PeopleDetail = () => {
     };
 
     const personDetails = usePersonFullDetails(personId);
+    const personManga = usePersonManga(personId);
+
     const person = personDetails.data?.data;
     const personImage = person?.images?.webp?.image_url || person?.images?.jpg?.image_url || ""; // Try webp first for better quality/performance
 
@@ -253,54 +255,54 @@ const PeopleDetail = () => {
                                     </div>
 
                                     {/* Name & Bio */}
-                                     <div className="flex-1 space-y-6 text-center md:text-left">
-                                         <motion.div
-                                             initial={{ opacity: 0, x: -20 }}
-                                             animate={{ opacity: 1, x: 0 }}
-                                             className="space-y-4"
-                                         >
-                                             <div>
-                                                 <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-                                                     {person.name}
-                                                 </h1>
-                                                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-lg text-foreground/70 font-semibold">
-                                                     {person.given_name && <span>{person.given_name}</span>}
-                                                     {person.family_name && <span>{person.family_name}</span>}
-                                                 </div>
+                                    <div className="flex-1 space-y-6 text-center md:text-left">
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="space-y-4"
+                                        >
+                                            <div>
+                                                <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+                                                    {person.name}
+                                                </h1>
+                                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-lg text-foreground/70 font-semibold">
+                                                    {person.given_name && <span>{person.given_name}</span>}
+                                                    {person.family_name && <span>{person.family_name}</span>}
+                                                </div>
 
-                                                 {person.alternate_names && person.alternate_names.length > 0 && (
-                                                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 mt-3">
-                                                         {person.alternate_names.map((name, idx) => (
-                                                             <Badge key={idx} variant="secondary" className="px-2.5 py-0.5 text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground border-white/5 font-medium uppercase tracking-wider">
-                                                                 {name}
-                                                             </Badge>
-                                                         ))}
-                                                     </div>
-                                                 )}
-                                             </div>
+                                                {person.alternate_names && person.alternate_names.length > 0 && (
+                                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 mt-3">
+                                                        {person.alternate_names.map((name, idx) => (
+                                                            <Badge key={idx} variant="secondary" className="px-2.5 py-0.5 text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground border-white/5 font-medium uppercase tracking-wider">
+                                                                {name}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                                                 {person.birthday && (
-                                                     <InfoChip
-                                                         icon={Calendar}
-                                                         label="Birthday"
-                                                         value={new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                                                     />
-                                                 )}
-                                             </div>
+                                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                                                {person.birthday && (
+                                                    <InfoChip
+                                                        icon={Calendar}
+                                                        label="Birthday"
+                                                        value={new Date(person.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                    />
+                                                )}
+                                            </div>
 
-                                             {/* Biography */}
-                                             <div className="pt-2">
-                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3 flex items-center justify-center md:justify-start gap-2">
-                                                     <div className="h-4 w-1 bg-primary rounded-full" />
-                                                     Biography
-                                                 </h4>
-                                                 <div className="text-sm md:text-base text-muted-foreground/90 leading-relaxed max-w-[75ch] whitespace-pre-wrap font-medium bg-white/5 p-6 rounded-2xl border border-white/5 shadow-xl">
-                                                     {person.about || "No biography available."}
-                                                 </div>
-                                             </div>
-                                         </motion.div>
-                                     </div>
+                                            {/* Biography */}
+                                            <div className="pt-2">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3 flex items-center justify-center md:justify-start gap-2">
+                                                    <div className="h-4 w-1 bg-primary rounded-full" />
+                                                    Biography
+                                                </h4>
+                                                <div className="text-sm md:text-base text-muted-foreground/90 leading-relaxed max-w-[75ch] whitespace-pre-wrap font-medium bg-white/5 p-6 rounded-2xl border border-white/5 shadow-xl">
+                                                    {person.about || "No biography available."}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    </div>
                                 </div>
 
                                 {/* Right Content: Sidebar (Col 9-12) */}
@@ -356,7 +358,7 @@ const PeopleDetail = () => {
                                     </TabsTrigger>
                                     <TabsTrigger value="manga" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5 transition-all font-bold uppercase tracking-widest text-[9px] px-4">
                                         <BookOpen className="h-3.5 w-3.5" />Manga
-                                        <span className="ml-1 opacity-60">({person.manga?.length || 0})</span>
+                                        <span className="ml-1 opacity-60">({personManga.data?.data?.length || 0})</span>
                                     </TabsTrigger>
                                 </TabsList>
                                 <ScrollBar orientation="horizontal" />
@@ -458,21 +460,34 @@ const PeopleDetail = () => {
                             {/* Manga Tab */}
                             <TabsContent value="manga">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {person.manga && person.manga.length > 0 ? (
-                                        person.manga.slice((mangaPage - 1) * ITEMS_PER_PAGE, mangaPage * ITEMS_PER_PAGE).map((m, idx) => (
-                                            <div key={idx} className="flex gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-all">
-                                                <div className="h-16 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
+                                    {personManga.isLoading ? (
+                                        Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+                                    ) : personManga.data?.data && personManga.data.data.length > 0 ? (
+                                        personManga.data.data.slice((mangaPage - 1) * ITEMS_PER_PAGE, mangaPage * ITEMS_PER_PAGE).map((m, idx) => (
+                                            <div key={idx} className="group flex gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
+                                                {/* Manga Image (using External MAL link or generic if internal not exist) */}
+                                                <a href={m.manga.url} target="_blank" rel="noopener noreferrer" className="shrink-0 overflow-hidden rounded-lg h-20 w-14 bg-muted">
                                                     <img
                                                         src={m.manga.images?.webp?.image_url || m.manga.images?.jpg?.image_url}
-                                                        className="h-full w-full object-cover"
+                                                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
                                                         alt={m.manga.title}
                                                     />
-                                                </div>
-                                                <div className="flex-1 py-0.5 min-w-0">
-                                                    <p className="font-bold text-xs line-clamp-2 mb-1">{m.manga.title}</p>
-                                                    <Badge variant="outline" className="text-[8px] border-white/10 text-muted-foreground">
-                                                        {m.position}
-                                                    </Badge>
+                                                </a>
+                                                <div className="flex-1 py-0.5 min-w-0 flex flex-col justify-between">
+                                                    <div>
+                                                        <a href={m.manga.url} target="_blank" rel="noopener noreferrer" className="font-bold text-xs group-hover:text-primary transition-colors line-clamp-2 mb-1">
+                                                            {m.manga.title}
+                                                        </a>
+                                                        <Badge variant="outline" className="text-[8px] border-white/10 text-muted-foreground font-black uppercase tracking-widest mt-1">
+                                                            {m.position}
+                                                        </Badge>
+                                                    </div>
+
+                                                    {/* External Link Indicator */}
+                                                    <div className="flex items-center gap-1 mt-2 text-[8px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <ExternalLink className="h-2 w-2" />
+                                                        <span>View on MAL</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
@@ -483,10 +498,10 @@ const PeopleDetail = () => {
                                         </div>
                                     )}
                                 </div>
-                                {person.manga && (
+                                {personManga.data?.data && (
                                     <PaginationControls
                                         currentPage={mangaPage}
-                                        totalPages={Math.ceil(person.manga.length / ITEMS_PER_PAGE)}
+                                        totalPages={Math.ceil(personManga.data.data.length / ITEMS_PER_PAGE)}
                                         onPageChange={(page) => handlePageChange(setMangaPage, page)}
                                     />
                                 )}
