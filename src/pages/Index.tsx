@@ -13,9 +13,9 @@ const Index = () => {
   const [sfwMode, setSfwMode] = useState(true);
 
   const topAiring = useTopAiring(sfwMode, 8);
-  const seasonNow = useSeasonNow(sfwMode, 12); // Showing more in main grid
-  const topAnime = useTopAnime(sfwMode, 8);
-  const seasonUpcoming = useSeasonUpcoming(sfwMode, 12);
+  const seasonNow = useSeasonNow(sfwMode, 24); // Enough for 8 cols * 2 rows + buffer
+  const topAnime = useTopAnime(sfwMode, 24);
+  const seasonUpcoming = useSeasonUpcoming(sfwMode, 24);
 
   return (
     <DashboardLayout sfwMode={sfwMode} onSfwChange={setSfwMode}>
@@ -59,9 +59,9 @@ const Index = () => {
             {seasonNow.isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-8 w-48" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {[...Array(10)].map((_, i) => (
-                    <div key={i} className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {[...Array(12)].map((_, i) => (
+                    <div key={i} className={`space-y-2 ${i >= 4 ? 'hidden sm:block' : ''} ${i >= 6 ? 'sm:hidden md:block' : ''} ${i >= 8 ? 'md:hidden lg:block' : ''} ${i >= 10 ? 'lg:hidden xl:block' : ''}`}>
                       <Skeleton className="aspect-[2/3] w-full rounded-xl" />
                       <Skeleton className="h-4 w-full" />
                     </div>
@@ -84,9 +84,9 @@ const Index = () => {
             {seasonUpcoming.isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-8 w-48" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {[...Array(12)].map((_, i) => (
+                    <div key={i} className={`space-y-2 ${i >= 4 ? 'hidden sm:block' : ''} ${i >= 6 ? 'sm:hidden md:block' : ''} ${i >= 8 ? 'md:hidden lg:block' : ''} ${i >= 10 ? 'lg:hidden xl:block' : ''}`}>
                       <Skeleton className="aspect-[2/3] w-full rounded-xl" />
                       <Skeleton className="h-4 w-full" />
                     </div>
@@ -109,9 +109,9 @@ const Index = () => {
             {topAnime.isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-8 w-48" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {[...Array(12)].map((_, i) => (
+                    <div key={i} className={`space-y-2 ${i >= 4 ? 'hidden sm:block' : ''} ${i >= 6 ? 'sm:hidden md:block' : ''} ${i >= 8 ? 'md:hidden lg:block' : ''} ${i >= 10 ? 'lg:hidden xl:block' : ''}`}>
                       <Skeleton className="aspect-[2/3] w-full rounded-xl" />
                       <Skeleton className="h-4 w-full" />
                     </div>

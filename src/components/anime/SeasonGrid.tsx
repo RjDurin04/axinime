@@ -38,9 +38,21 @@ export function SeasonGrid({ animes, title, scrollable = false }: SeasonGridProp
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 md:gap-4">
           {animes.map((anime, index) => (
-            <SeasonCard key={`${anime.mal_id}-${index}`} anime={anime} index={index} />
+            <div
+              key={`${anime.mal_id}-${index}`}
+              className={`
+                ${index >= 4 ? "hidden sm:block" : ""} 
+                ${index >= 6 ? "sm:hidden md:block" : ""}
+                ${index >= 8 ? "md:hidden lg:block" : ""}
+                ${index >= 10 ? "lg:hidden xl:block" : ""}
+                ${index >= 12 ? "xl:hidden 2xl:block" : ""}
+                ${index >= 16 ? "2xl:hidden" : ""}
+              `}
+            >
+              <SeasonCard anime={anime} index={index} />
+            </div>
           ))}
         </div>
       )}
