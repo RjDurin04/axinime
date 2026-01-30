@@ -16,13 +16,17 @@ Axinime is a premium, high-performance anime discovery platform built with **Rea
 
 ## 🚀 Tech Stack
 
-- **Framework**: [React 18](https://react.dev/)
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **Data Fetching**: [TanStack Query v5](https://tanstack.com/query/v5)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Framework**: [React 18](https://react.dev/) (Functional Components, Hooks)
+- **Language**: [TypeScript](https://www.typescriptlang.org/) (Strict Type Safety)
+- **Build Tool**: [Vite](https://vitejs.dev/) (Extreme Speed, HMR)
+- **Data Fetching**: [TanStack Query v5](https://tanstack.com/query/v5) (Aggressive caching, async state management)
+- **Routing**: [React Router DOM v6](https://reactrouter.com/) (Dynamic routing, scroll restoration)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) (Utility-first, responsive design)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/) (Physics-based interactions)
+- **Forms & Validation**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
 - **Icons**: [Lucide React](https://lucide.dev/)
+- **Toasts**: [Sonner](https://sonner.emilkowal.ski/)
 
 ## 🛠️ Getting Started
 
